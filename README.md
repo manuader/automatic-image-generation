@@ -261,7 +261,7 @@ referencia, 25.8.
 ## 7. Todos los comandos
 
 ```bash
-python3 generate.py --engine gemini --launch      # abre el Chrome aislado (logueate ahí)
+python3 generate.py --engine gemini --launch      # abre el Chrome aislado del motor (logueate ahí)
 python3 generate.py --engine chat-gpt --probe     # ¿el motor reconoce la página? cuota: cero
 python3 generate.py --project X --dry-run         # la cola, sin generar
 python3 generate.py --project X                   # generar
@@ -296,10 +296,14 @@ Todos los fallos quedan anotados con su motivo en `state/run.json`.
 
 ## 9. Los motores
 
-| motor | estado |
-|---|---|
-| `gemini` | **Verificado en producción**: 335 imágenes generadas con él. |
-| `chat-gpt` | **Escrito, sin verificar contra el sitio.** Ver abajo. |
+| motor | puerto | estado |
+|---|---|---|
+| `gemini` | 9222 | **Verificado en producción**: 335 imágenes generadas con él. |
+| `chat-gpt` | 9223 | **Escrito y medio verificado.** Ver abajo. |
+
+Cada motor abre **su** Chrome en **su** puerto, y no es un detalle: el launcher
+da por buena cualquier ventana que ya conteste en el puerto pedido, así que con
+un puerto compartido el segundo motor reusaría en silencio la sesión del primero.
 
 La mecánica que hace el trabajo pesado —el tipeo por tandas, la recuperación de
 foco, el paste de la referencia, la extracción por canvas, la huella de píxeles—
@@ -308,16 +312,26 @@ motor es un archivo de cuatro constantes: la URL, el selector del botón de
 enviar, la marca de la URL de conversación y las frases con las que ese sitio
 dice "no puedo".
 
-Las de ChatGPT están escritas con la mejor información disponible pero **nadie
-las abrió contra la página**, porque verificarlas exige el navegador. Cuesta un
-comando y cero cuota:
+De ChatGPT se comprobó contra la página lo más importante:
+
+- `chatgpt.com` carga sin redirigir y el cuadro de texto (`#prompt-textarea`, un
+  ProseMirror) lo encuentra el selector genérico;
+- **`send_keys` de Selenium no aterriza en ese editor** — se tipeó "hola" y el
+  composer quedó vacío. Era la suposición grande y quedó confirmada: ChatGPT
+  necesita el mismo camino de teclas reales que Gemini, o sea que la mecánica
+  compartida es la correcta.
+
+Lo que falta verificar es el botón de enviar, y por una razón concreta: con el
+composer vacío ese botón **no existe** (en su lugar está el de voz), así que
+revelarlo exige tipear de verdad. Cuesta un comando y cero cuota:
 
 ```bash
-python3 generate.py --engine chat-gpt --launch    # logueate
-python3 generate.py --engine chat-gpt --probe     # dice qué reconoció
+python3 generate.py --engine chat-gpt --launch    # logueate en esa ventana
+# escribí una palabra a mano en el composer, y entonces:
+python3 generate.py --engine chat-gpt --probe
 ```
 
-Si `compose_box` o `send_button` salen `null`, lo que hay que corregir es una
+Si `send_button` sale `null` **con algo escrito**, lo que hay que corregir es una
 línea de `chat-gpt/browser.py`; el archivo explica cuál y cómo. Los tests
 (`tests/test_engines.py`) ya garantizan que el perfil está completo, que los
 selectores son buscables y que las frases de bloqueo pueden llegar a matchear —
@@ -344,10 +358,10 @@ core/         la parte genérica: no sabe qué modelo hay ni para qué son las i
 gemini/       ┐ un archivo de constantes por proveedor
 chat-gpt/     ┘
 projects/     los objetivos: prompts, referencias y salida
-tests/        61 tests, ninguno necesita navegador
+tests/        62 tests, ninguno necesita navegador
 generate.py   el único comando
 ```
 
-Los tests corren sin Chrome a propósito: una suite que necesitara navegador no se
+Los 62 tests corren sin Chrome a propósito: una suite que necesitara navegador no se
 correría nunca, y lo que hay que proteger —que el prompt llegue entero, que no se
 envíe uno barajado, que un error no voltee la tanda— se prueba sin él.

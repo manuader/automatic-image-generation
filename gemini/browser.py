@@ -12,6 +12,7 @@ from core.webchat import WebChatBrowser
 
 class Browser(WebChatBrowser):
     NAME = "gemini"
+    DEBUG_PORT = 9222
     HOME_URL = "https://gemini.google.com/"
     #: Se entra por `/app` (sin barra) y la conversación agrega `/app/<id>`, que
     #: es justo lo que confirma que el envío salió.

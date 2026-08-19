@@ -109,8 +109,27 @@ class ChromeLauncherTests(unittest.TestCase):
         self.assertIn(f"--user-data-dir={profile}", command)
         self.assertIn("https://gemini.google.com/", command)
 
-    def test_each_engine_gets_its_own_profile_so_both_sessions_coexisten(self):
-        self.assertNotEqual(chrome.profile_for("gemini"), chrome.profile_for("chat-gpt"))
+    def test_each_engine_gets_its_own_profile_and_its_own_port(self):
+        """Perfil propio Y puerto propio, o el perfil no sirve de nada.
+
+        `ensure_debug_chrome` da por buena cualquier Chrome que ya conteste en el
+        puerto. Con un puerto compartido, `--launch` del segundo motor encuentra
+        el Chrome del primero, devuelve "ya estaba abierto" y el batch termina
+        manejando la sesión equivocada sin decir una palabra. Pasó de verdad el
+        2026-08-19: un `--probe` de chat-gpt se conectó al Chrome de Gemini que
+        estaba abierto en 9222."""
+        puertos = {name: engines.load(name).DEBUG_PORT for name in ENGINES}
+        perfiles = {name: chrome.profile_for(name) for name in ENGINES}
+
+        self.assertEqual(len(set(puertos.values())), len(ENGINES), f"puertos repetidos: {puertos}")
+        self.assertEqual(len(set(perfiles.values())), len(ENGINES))
+
+    def test_a_browser_without_an_explicit_port_uses_its_engines_own(self):
+        for name in ENGINES:
+            with self.subTest(engine=name):
+                browser = engines.load(name)
+                self.assertEqual(browser().port, browser.DEBUG_PORT)
+                self.assertEqual(browser(port=9999).port, 9999)
 
 
 if __name__ == "__main__":

@@ -85,6 +85,13 @@ class WebChatBrowser:
 
     #: Cómo se llama este motor en la línea de comandos.
     NAME = "webchat"
+    #: Puerto de depuración propio. Uno por motor y no uno solo compartido:
+    #: `ensure_debug_chrome` da por buena cualquier Chrome que ya responda en el
+    #: puerto, así que con un default único `--launch` reusaría en silencio la
+    #: ventana del OTRO motor —o la de otro proyecto— y el batch terminaría
+    #: manejando la sesión equivocada. Medido el 2026-08-19 contra un Chrome de
+    #: Gemini abierto en 9222.
+    DEBUG_PORT = 9222
     #: Dónde abre el launcher la primera vez (para iniciar sesión a mano).
     HOME_URL = ""
     #: A dónde va el runner para empezar UNA conversación limpia por imagen.
@@ -112,14 +119,14 @@ class WebChatBrowser:
 
     def __init__(
         self,
-        port: int = 9222,
+        port: int | None = None,
         timeout: int = 180,
         ref_threshold: float = 4,
         discards_dir: Path | None = None,
         type_chunk: int = TYPE_CHUNK_CHARS,
         type_pause: float = TYPE_PAUSE_SECONDS,
     ):
-        self.port = port
+        self.port = self.DEBUG_PORT if port is None else int(port)
         self.timeout = timeout
         # Tamaño de tanda y respiro entre tandas al tipear el prompt (ver
         # TYPE_CHUNK_CHARS). El piso del tamaño lo pone `chunk_prompt`, que es

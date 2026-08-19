@@ -61,7 +61,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--only", help="una sola clave")
     parser.add_argument("--limit", type=int, default=0, help="máximo de imágenes (0 = todas)")
     parser.add_argument("--pause", type=float, default=4, help="segundos entre imágenes")
-    parser.add_argument("--port", type=int, default=chrome.DEFAULT_PORT, help="puerto Chrome debug")
+    parser.add_argument("--port", type=int, default=None,
+                        help="puerto Chrome debug (por defecto, el del motor)")
     parser.add_argument("--timeout", type=int, default=180, help="timeout de UI por imagen")
     parser.add_argument("--retries", type=int, default=1,
                         help="reintentos por imagen ante un fallo transitorio")
@@ -86,7 +87,7 @@ def build_browser(browser_class, project: Project | None, args) -> object:
     if threshold is None:
         threshold = settings.get("reference_threshold", 4.0)
     return browser_class(
-        port=args.port,
+        port=args.port,  # None ⇒ el puerto propio del motor
         timeout=args.timeout,
         ref_threshold=threshold,
         discards_dir=project.discards if project else None,
@@ -144,11 +145,12 @@ def main() -> None:
     browser_class = engines.load(engine)
 
     if args.launch:
+        port = args.port or browser_class.DEBUG_PORT
         launched = chrome.ensure_debug_chrome(
-            browser_class.HOME_URL, chrome.profile_for(engine), args.port
+            browser_class.HOME_URL, chrome.profile_for(engine), port
         )
         state = "abierto" if launched else "ya estaba abierto"
-        print(f"Chrome aislado de {engine} {state}: {chrome.debug_url(args.port)}")
+        print(f"Chrome aislado de {engine} {state}: {chrome.debug_url(port)}")
         print("Iniciá sesión en ESA ventana si te lo pide; después corré el generador.")
         return
 
