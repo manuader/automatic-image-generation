@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+.chrome-profile/
+
+# Las imágenes generadas y el estado de cada corrida NO se versionan: son salida,
+# pesan cientos de megas y crecen para siempre.
+#
+# ⚠️ Leelo dos veces antes de clonar este repo en otra máquina: `output/` es
+# también lo que la cola mira para no volver a generar. Sin esos archivos, un
+# clon limpio vuelve a pedirle al modelo TODO lo que ya se pagó. Los originales
+# son el activo del proyecto: copialos aparte, no confíes en git para eso.
+projects/*/output/
+projects/*/state/

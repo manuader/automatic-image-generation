@@ -1,0 +1,12 @@
+# Generador de imágenes por chat web — dependencias.
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+#
+# Deliberadamente cortas. La versión de Selenium va clavada porque la conexión
+# por `debugger_address` a un Chrome ya abierto es lo primero que se rompe
+# cuando cambia el driver, y es el cimiento de todo lo demás.
+selenium==4.39.0
+pillow
+# numpy y scipy los usa SÓLO el recorte por conectividad (modo game-asset). Si
+# nunca vas a recortar fondos, el resto anda sin ellos.
+numpy
+scipy
