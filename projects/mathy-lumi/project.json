@@ -1,0 +1,10 @@
+{
+  "engine": "chat-gpt",
+  "output": "game-asset",
+  "sizes": [
+    192,
+    512
+  ],
+  "punch_holes": [],
+  "reference_threshold": 4
+}
