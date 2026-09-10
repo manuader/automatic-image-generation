@@ -51,6 +51,60 @@ class Browser(WebChatBrowser):
     #: aparece recién cuando el envío salió — que es lo que se le pide.
     CONVERSATION_URL_MARK = "/c/"
 
+    #: 2026-09-10: ChatGPT toma `Input.insertText` de CDP como input de verdad
+    #: en su ProseMirror [SUPUESTO hasta verificarlo en vivo; `send_keys` NO
+    #: entraba]. Con esto el motor no necesita el permiso de Accesibilidad ni la
+    #: máquina quieta.
+    TYPING = "cdp"
+
+    #: El HTML de ChatGPT trae en scripts los textos de TODA la interfaz, entre
+    #: ellos "You've reached your limit of {active_limit} active tasks": leído
+    #: del `page_source`, frenaba cada imagen con la cuota intacta. Se mira sólo
+    #: lo que se ve (2026-09-10).
+    BLOCK_SCAN = "visible"
+
+    #: Las imágenes de la respuesta son `loading="lazy"`: con la ventana tapada no
+    #: se cargan y miden 0x0, así que se bajan con `fetch` desde la pestaña. Así
+    #: se perdieron `bg_geom`, `bg_disc` y `bg_world` aunque ChatGPT las generó.
+    FETCH_IN_PAGE = True
+
+    #: Los `<input type=file>` del composer aceptan `multiple`: las referencias
+    #: suben juntas y sin portapapeles. Observados el 2026-09-10 con la página
+    #: deslogueada; `upload-files` es el id histórico del composer de escritorio.
+    FILE_INPUT_SELECTORS = [
+        ("CSS_SELECTOR", "input#upload-files"),
+        ("CSS_SELECTOR", "input#octane-mobile-composer-files-input"),
+        ("CSS_SELECTOR", "input[type='file'][multiple][accept*='image']"),
+    ]
+
+    #: El botón de frenar existe mientras ChatGPT genera; la imagen se pinta de a
+    #: poco, y una extracción temprana guarda la versión borrosa.
+    GENERATING_SELECTORS = [
+        ("CSS_SELECTOR", "button[data-testid='stop-button']"),
+        ("CSS_SELECTOR", "button[data-testid='composer-stop-button']"),
+        ("CSS_SELECTOR", "button[aria-label='Stop streaming']"),
+        ("CSS_SELECTOR", "[data-testid='image-gen-loading-state']"),
+    ]
+
+    #: Las imágenes que puede haber generado ChatGPT: las de los turnos que
+    #: vienen DESPUÉS del último mensaje del usuario, nunca las de sus mensajes.
+    #: El 2026-09-10 el extractor agarró la referencia adjunta (ChatGPT la
+    #: recomprime: MAE 4.94, por encima del umbral de 4) segundos después de
+    #: enviar, cuando el botón de frenar todavía no existía. Los turnos de
+    #: imagen del asistente no llevan `data-message-author-role`, así que se
+    #: reconocen por no ser del usuario.
+    RESULT_IMAGES_JS = """
+        const turns = [...document.querySelectorAll('[data-testid^=conversation-turn-]')];
+        let lastUser = -1;
+        turns.forEach((t, i) => { if (t.querySelector('[data-message-author-role=user]')) lastUser = i; });
+        const answer = turns.slice(lastUser + 1);
+        if (answer.some(t => t.querySelector('[data-testid=image-gen-loading-state]'))) return [];
+        return answer.flatMap(t => [...t.querySelectorAll('img')]);
+    """
+
+    def _result_images(self) -> list:
+        return self._driver().execute_script(self.RESULT_IMAGES_JS) or []
+
     #: En orden de estabilidad: el testid sobrevive a los cambios de idioma, los
     #: aria-label no.
     SEND_BUTTON_SELECTORS = [

@@ -72,6 +72,35 @@ class QueueTests(unittest.TestCase):
         prompt = write_prompt(self.prompts, "48_logo", reference="/tmp/marca.png")
         self.assertEqual(parse_asset(prompt, base=self.root).reference, Path("/tmp/marca.png"))
 
+    def test_several_backticked_references_are_all_attached_in_order(self):
+        """Un personaje nuevo suele pedir más de una imagen de contexto. Van en el
+        mismo campo y se adjuntan juntas; la primera es la que manda."""
+        path = self.prompts / "01_mascota.md"
+        path.write_text(
+            "# 01\n\n- **estado**: pendiente\n"
+            "- **referencia**: adjuntar `references/a.png`, `references/b.png` y `/tmp/c.png`\n"
+            "\n## Prompt\n\nx\n",
+            encoding="utf-8",
+        )
+
+        asset = parse_asset(path, base=self.root)
+
+        self.assertEqual(asset.reference, self.root / "references" / "a.png")
+        self.assertEqual(
+            asset.references,
+            (self.root / "references" / "a.png", self.root / "references" / "b.png", Path("/tmp/c.png")),
+        )
+
+    def test_a_single_reference_keeps_meaning_exactly_what_it_meant(self):
+        prompt = write_prompt(self.prompts, "02_uno", reference="output/ceo.png")
+        asset = parse_asset(prompt, base=self.root)
+        self.assertEqual(asset.references, (self.root / "output" / "ceo.png",))
+        self.assertEqual(asset.extra_references, ())
+
+    def test_no_reference_means_no_references(self):
+        prompt = write_prompt(self.prompts, "03_nada", reference=None)
+        self.assertEqual(parse_asset(prompt, base=self.root).references, ())
+
     def test_a_prompt_without_a_prompt_section_is_rejected_loudly(self):
         path = self.prompts / "09_vacio.md"
         path.write_text("# Sin prompt\n\n- **estado**: pendiente\n", encoding="utf-8")

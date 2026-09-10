@@ -13,3 +13,7 @@ __pycache__/
 # son el activo del proyecto: copialos aparte, no confíes en git para eso.
 projects/*/output/
 projects/*/state/
+
+# Lo descartado de cada proyecto (direcciones que no se tomaron) también es salida:
+# se guarda en disco para comparar, no en git.
+projects/*/archivo/

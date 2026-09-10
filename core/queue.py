@@ -4,6 +4,7 @@ Un prompt es un archivo `NN_clave.md` con tres cosas que le importan al runner:
 
     - **estado**: pendiente        ← pasa a `hecho` recién con el PNG verificado
     - **referencia**: `references/logo.png`   ← opcional; se adjunta al chat
+    - **referencia**: adjuntar `references/a.png`, `references/b.png`   ← varias a la vez
     ## Prompt
     <el texto que se le manda al modelo, tal cual>
 
@@ -24,6 +25,9 @@ STATE_RE = re.compile(r"^- \*\*estado\*\*: (?P<state>\w+)$", re.MULTILINE)
 REFERENCE_RE = re.compile(
     r"^- \*\*referencia\*\*:[^`\n]*`?(?P<path>[^`\n]+?)`?\s*$", re.MULTILINE
 )
+#: La línea entera del campo, para leer VARIAS rutas entre backticks.
+REFERENCE_LINE_RE = re.compile(r"^- \*\*referencia\*\*:(?P<rest>.*)$", re.MULTILINE)
+BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
 #: El `00_` es el índice del set de prompts, no una imagen a generar.
 INDEX_PREFIX = "00_"
 
@@ -36,12 +40,23 @@ class Asset:
     state: str
     prompt: str
     #: Imagen a adjuntar, resuelta desde el campo `**referencia**` del .md.
-    #: `None` = este prompt no lleva referencia.
+    #: `None` = este prompt no lleva referencia. Si el campo trae varias, es la
+    #: primera: la que manda el estilo y contra la que se mide el parecido.
     reference: Path | None
+    #: Las demás referencias del mismo campo, que se adjuntan en el mismo
+    #: mensaje. Existe porque un personaje suele necesitar más de una vista
+    #: (la pose, la cara, el estilo de otro de la misma familia), y combinarlas
+    #: en una sola imagen le quita resolución a cada una.
+    extra_references: tuple[Path, ...] = ()
 
     @property
     def needs_reference(self) -> bool:
         return self.reference is not None
+
+    @property
+    def references(self) -> tuple[Path, ...]:
+        """Todas las imágenes a adjuntar, en el orden del .md."""
+        return () if self.reference is None else (self.reference, *self.extra_references)
 
 
 def parse_reference(text: str, base: Path) -> Path | None:
@@ -61,6 +76,25 @@ def parse_reference(text: str, base: Path) -> Path | None:
     return candidate if candidate.is_absolute() else (base / raw)
 
 
+def parse_references(text: str, base: Path) -> tuple[Path, ...]:
+    """Todas las rutas del campo `**referencia**`, resueltas como `parse_reference`.
+
+    Con backticks se aceptan varias (`a.png`, `b.png`); sin backticks, el campo
+    es una sola ruta, como siempre."""
+    line = REFERENCE_LINE_RE.search(text)
+    if not line:
+        return ()
+    raws = BACKTICKED_RE.findall(line.group("rest"))
+    if not raws:
+        single = parse_reference(text, base)
+        return () if single is None else (single,)
+    paths = []
+    for raw in raws:
+        candidate = Path(raw.strip())
+        paths.append(candidate if candidate.is_absolute() else (base / raw.strip()))
+    return tuple(paths)
+
+
 def parse_asset(path: Path, base: Path) -> Asset:
     """Convierte un `NN_clave.md` en una entrada de cola."""
     match = FILE_RE.match(path.name)
@@ -71,13 +105,15 @@ def parse_asset(path: Path, base: Path) -> Asset:
     _, marker, prompt = text.partition("## Prompt")
     if not marker or not prompt.strip():
         raise ValueError(f"Falta ## Prompt en {path}")
+    refs = parse_references(text, base)
     return Asset(
         order=int(match.group("order")),
         key=match.group("key"),
         path=path,
         state=state.group("state") if state else "pendiente",
         prompt=prompt.strip(),
-        reference=parse_reference(text, base),
+        reference=refs[0] if refs else None,
+        extra_references=refs[1:],
     )
 
 

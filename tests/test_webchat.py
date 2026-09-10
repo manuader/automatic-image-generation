@@ -20,6 +20,7 @@ from core.errors import GenerationBlocked
 from core.webchat import applescript_string, chunk_prompt
 
 Gemini = engines.load("gemini")
+ChatGPT = engines.load("chat-gpt")
 CHROME = webchat.CHROME_PROCESS_NAME
 
 
@@ -553,3 +554,236 @@ class TransientDomErrorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeCdpDriver:
+    """Lo justo de Selenium para el camino por CDP: un editor que junta lo que
+    `Input.insertText` le mete, y el click que gastaría la cuota."""
+
+    def __init__(self):
+        self.text = ""
+        self.focused = False
+        self.sends = 0
+        self.current_url = "https://chatgpt.com/c/abc"
+
+    def execute_script(self, script, *_args):
+        if "focus()" in script:
+            self.focused = True
+        elif "click()" in script:
+            self.sends += 1
+
+    def execute_cdp_cmd(self, command, params):
+        assert command == "Input.insertText", command
+        assert self.focused, "se escribió antes de darle foco al editor"
+        self.text += params["text"]
+
+
+class CdpEditor:
+    def __init__(self, driver):
+        self.driver = driver
+
+    def get_attribute(self, name):
+        return self.driver.text if name == "innerText" else None
+
+
+class HeadlessCdp(ChatGPT):
+    def __init__(self, driver, **kwargs):
+        super().__init__(**kwargs)
+        self.fake = driver
+        self.editor = CdpEditor(driver)
+
+    def _driver(self):
+        return self.fake
+
+    def _find_first(self, _selectors):
+        return self.editor
+
+    def _wait_for(self, action, _description):
+        return "el botón de enviar"
+
+
+class ForbiddenSubprocess:
+    """Si el camino por CDP llama a osascript, el test lo tiene que saber."""
+
+    TimeoutExpired = subprocess.TimeoutExpired
+
+    def run(self, command, **_kwargs):
+        raise AssertionError(f"el tipeo por CDP llamó a osascript: {command}")
+
+
+class CdpTypingTests(unittest.TestCase):
+    """ChatGPT se escribe por el protocolo de Chrome: sin permiso de
+    Accesibilidad y sin pelear el foco con otras apps (2026-09-10, el proceso
+    de Claude no tiene ese permiso y la app de escritorio de ChatGPT se robaba
+    el frente)."""
+
+    PROMPT = ("Match the art style of the attached references. " * 30)[:1400]
+
+    def setUp(self):
+        original_sub, original_time = webchat.subprocess, webchat.time
+        webchat.subprocess, webchat.time = ForbiddenSubprocess(), NoSleep
+        self.addCleanup(setattr, webchat, "subprocess", original_sub)
+        self.addCleanup(setattr, webchat, "time", original_time)
+
+    def test_chatgpt_types_through_cdp(self):
+        self.assertEqual(ChatGPT.TYPING, "cdp")
+        self.assertEqual(Gemini.TYPING, "osascript")
+
+    def test_the_prompt_lands_exact_and_is_sent_once_without_system_keys(self):
+        driver = FakeCdpDriver()
+        browser = HeadlessCdp(driver, type_chunk=250, type_pause=0)
+
+        browser._submit(self.PROMPT)
+
+        self.assertEqual(driver.text, self.PROMPT)
+        self.assertEqual(driver.sends, 1)
+
+    def test_an_editor_that_ignores_cdp_aborts_before_sending(self):
+        """El sitio puede cambiar y dejar de aceptar CDP: se tiene que enterar el
+        guard de siempre, no el botón de enviar."""
+        driver = FakeCdpDriver()
+        driver.execute_cdp_cmd = lambda *_: None
+        browser = HeadlessCdp(driver, type_chunk=250, type_pause=0)
+
+        with self.assertRaises(GenerationBlocked):
+            browser._submit(self.PROMPT)
+        self.assertEqual(driver.sends, 0)
+
+    def test_chatgpt_uploads_through_a_file_input(self):
+        self.assertTrue(ChatGPT.FILE_INPUT_SELECTORS)
+        self.assertTrue(ChatGPT.GENERATING_SELECTORS)
+        self.assertEqual(Gemini.FILE_INPUT_SELECTORS, [])
+
+
+class BlockScanTests(unittest.TestCase):
+    """El falso "límite de uso" de ChatGPT, 2026-09-10: la frase estaba en una
+    plantilla de un script de la página, no en pantalla."""
+
+    SOURCE = ('<script>{"active_task_limit_message_template":"You\'ve reached your limit '
+              'of {active_limit} active tasks"}</script><div>What is on your mind today?</div>')
+
+    class Page:
+        def __init__(self, source, visible):
+            self.page_source = source
+            self.visible = visible
+
+        def execute_script(self, _script):
+            return self.visible
+
+    def _browser(self, engine, page):
+        browser = engine()
+        browser._driver = lambda: page
+        return browser
+
+    def test_chatgpt_ignores_limit_phrases_hidden_in_scripts(self):
+        page = self.Page(self.SOURCE, "What is on your mind today?")
+        self._browser(ChatGPT, page)._check_blocked()  # no levanta
+
+    def test_chatgpt_still_stops_on_a_limit_the_player_can_see(self):
+        page = self.Page(self.SOURCE, "You've reached your limit for image generation")
+        with self.assertRaises(GenerationBlocked):
+            self._browser(ChatGPT, page)._check_blocked()
+
+    def test_gemini_keeps_reading_the_whole_source(self):
+        self.assertEqual(Gemini.BLOCK_SCAN, "source")
+
+
+class ResultScopeTests(unittest.TestCase):
+    """La imagen generada se busca donde puede estar, no en toda la página."""
+
+    def test_chatgpt_never_looks_at_the_users_own_attachments(self):
+        js = ChatGPT.RESULT_IMAGES_JS
+        self.assertIn("data-message-author-role=user", js)
+        self.assertIn("image-gen-loading-state", js)
+
+    def test_nothing_is_extracted_while_the_answer_has_no_images(self):
+        browser = ChatGPT()
+        browser._driver = lambda: self
+        browser._result_images = lambda: []
+        self.assertIsNone(browser._extract_generated_png(None))
+
+    def find_elements(self, *_args):  # GENERATING_SELECTORS: nada generándose
+        return []
+
+    def set_script_timeout(self, *_args):
+        return None
+
+    def test_chatgpt_waits_for_the_image_loading_state(self):
+        self.assertIn(("CSS_SELECTOR", "[data-testid='image-gen-loading-state']"), ChatGPT.GENERATING_SELECTORS)
+
+
+class StaleRetryTests(unittest.TestCase):
+    """`lumi_key` y `lumi_read` se perdieron por un elemento redibujado entre
+    que se encontró y se usó (2026-09-10). Reintentar tiene que alcanzar."""
+
+    def setUp(self):
+        original = webchat.time
+        webchat.time = NoSleep
+        self.addCleanup(setattr, webchat, "time", original)
+
+    def test_a_stale_element_is_retried_and_the_action_lands(self):
+        from selenium.common.exceptions import StaleElementReferenceException
+
+        calls = []
+
+        def flaky():
+            calls.append(1)
+            if len(calls) < 3:
+                raise StaleElementReferenceException("redibujado")
+            return "ok"
+
+        self.assertEqual(ChatGPT()._retry_stale(flaky), "ok")
+        self.assertEqual(len(calls), 3)
+
+    def test_a_stale_element_that_never_settles_still_raises(self):
+        from selenium.common.exceptions import StaleElementReferenceException
+
+        def always():
+            raise StaleElementReferenceException("siempre")
+
+        with self.assertRaises(StaleElementReferenceException):
+            ChatGPT()._retry_stale(always)
+
+
+class FetchExtractionTests(unittest.TestCase):
+    """2026-09-10: con la ventana de ChatGPT tapada, las imágenes `lazy` de la
+    respuesta no se cargaron (0x0) y el extractor esperó el timeout de tres
+    generaciones que sí existían."""
+
+    class Img:
+        def __init__(self, src):
+            self.src = src
+
+        def get_attribute(self, name):
+            return self.src if name == "src" else "0"
+
+    def find_elements(self, *_args):  # nada generándose
+        return []
+
+    def _browser(self, images, payload):
+        browser = ChatGPT()
+        browser._driver = lambda: self
+        browser._result_images = lambda: images
+        browser.fetched = []
+        browser._fetch_in_page = lambda src: browser.fetched.append(src) or payload
+        return browser
+
+    def test_an_image_the_browser_never_loaded_is_still_extracted(self):
+        real = png_bytes(Image.linear_gradient("L").resize((1024, 1024)).convert("RGB"))
+        layers = [self.Img("https://chatgpt.com/x")] * 3
+        browser = self._browser(layers, real)
+
+        raw = browser._extract_generated_png(None)
+
+        self.assertIsNotNone(raw)
+        self.assertEqual(Image.open(io.BytesIO(raw)).size, (1024, 1024))
+        self.assertEqual(browser.fetched, ["https://chatgpt.com/x"], "bajó dos veces la misma capa")
+
+    def test_a_thumbnail_is_not_a_result(self):
+        thumb = png_bytes(Image.linear_gradient("L").resize((200, 200)).convert("RGB"))
+        browser = self._browser([self.Img("https://chatgpt.com/avatar")], thumb)
+        self.assertIsNone(browser._extract_generated_png(None))
+
+    def test_gemini_keeps_the_canvas_path(self):
+        self.assertFalse(Gemini.FETCH_IN_PAGE)
+        self.assertTrue(ChatGPT.FETCH_IN_PAGE)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import traceback
 from pathlib import Path
 
 from core.errors import BROWSER_ERRORS, GenerationBlocked
@@ -35,6 +37,11 @@ class AssetRunner:
                 raise GenerationBlocked("lo que llegó no es un PNG válido del tamaño esperado")
             derive_for_project(self.project, asset.key, destination)
         except (GenerationBlocked, OSError, ValueError, RuntimeError) + BROWSER_ERRORS as error:
+            # El mensaje de Selenium no dice DÓNDE pasó: sin estas líneas, un
+            # "stale element" se depura a ciegas.
+            if not isinstance(error, GenerationBlocked):
+                where = traceback.format_exc(limit=-4).strip().splitlines()
+                print("  · traceback:\n    " + "\n    ".join(where[-8:]), file=sys.stderr, flush=True)
             self.checkpoint.record_failure(asset.key, str(error))
             return False
         mark_asset_done(asset)

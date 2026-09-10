@@ -92,6 +92,31 @@ class WebChatBrowser:
     #: manejando la sesión equivocada. Medido el 2026-08-19 contra un Chrome de
     #: Gemini abierto en 9222.
     DEBUG_PORT = 9222
+    #: Cómo se escribe el prompt. `osascript`: teclas reales de macOS, que piden
+    #: el permiso de Accesibilidad y la máquina quieta. `cdp`: el protocolo de
+    #: Chrome (`Input.insertText`), sin teclas del sistema: sirve en los sitios
+    #: cuyo editor lo acepta como input de verdad (ChatGPT sí; Gemini no, su
+    #: botón de enviar no se habilita).
+    TYPING = "osascript"
+    #: `<input type=file>` por donde subir las referencias, en orden de
+    #: preferencia. Vacío = el sitio no expone uno usable y se pega desde el
+    #: portapapeles, de a una.
+    FILE_INPUT_SELECTORS: list[tuple[str, str]] = []
+    #: Lo que está en pantalla MIENTRAS el modelo genera (el botón de frenar).
+    #: Mientras aparezca no se extrae nada: una vista previa a medio pintar
+    #: también es una imagen grande y con contenido.
+    GENERATING_SELECTORS: list[tuple[str, str]] = []
+    #: Dónde se buscan las frases de bloqueo. `source`: el HTML entero, como
+    #: siempre. `visible`: sólo el texto que se ve. ChatGPT necesita `visible`:
+    #: su HTML trae los textos de la interfaz en scripts, y uno de ellos ("You've
+    #: reached your limit of {active_limit} active tasks") frenaba el batch con la
+    #: cuota intacta (2026-09-10).
+    BLOCK_SCAN = "source"
+    #: Bajar la imagen generada con `fetch` desde la pestaña, en vez de leerla
+    #: por canvas. Hace falta donde las imágenes son `loading="lazy"`: con la
+    #: ventana tapada el navegador no las carga (`naturalWidth` 0) y el extractor
+    #: no veía ninguna aunque la generación estuviera hecha (2026-09-10).
+    FETCH_IN_PAGE = False
     #: Dónde abre el launcher la primera vez (para iniciar sesión a mano).
     HOME_URL = ""
     #: A dónde va el runner para empezar UNA conversación limpia por imagen.
@@ -180,7 +205,13 @@ class WebChatBrowser:
         return None
 
     def _check_blocked(self) -> None:
-        reason = self.contains_error(self._driver().page_source)
+        driver = self._driver()
+        text = (
+            driver.execute_script("return document.body ? document.body.innerText : ''") or ""
+            if self.BLOCK_SCAN == "visible"
+            else driver.page_source
+        )
+        reason = self.contains_error(text)
         if reason:
             raise GenerationBlocked(reason)
 
@@ -193,6 +224,18 @@ class WebChatBrowser:
             for element in elements:
                 if element.is_displayed() and element.is_enabled():
                     return element
+        return None
+
+    def _find_present(self, selectors: list[tuple[str, str]]):
+        """Como `_find_first`, pero sin exigir que el elemento se vea: los
+        `<input type=file>` de los chats están ocultos a propósito."""
+        from selenium.webdriver.common.by import By
+
+        driver = self._driver()
+        for by, value in selectors:
+            found = driver.find_elements(getattr(By, by), value)
+            if found:
+                return found[0]
         return None
 
     def _wait_for(self, action, description: str):
@@ -236,6 +279,44 @@ class WebChatBrowser:
         if field is not None:
             field.click()
             time.sleep(0.3)
+
+    def _thumbnail_count(self) -> int:
+        # En UNA llamada de JS y sin devolver elementos: recién abierto el chat,
+        # el sitio sigue redibujando (historial, composer) y un `img` que se
+        # encontró y se reemplaza antes de preguntarle el ancho levanta
+        # StaleElementReference — fuera de `_wait_for`, que es lo único que
+        # reintenta. Así se perdieron `lumi_key` y `lumi_read` (2026-09-10).
+        return int(
+            self._driver().execute_script(
+                "return [...document.images].filter(i => i.naturalWidth > 100).length"
+            )
+            or 0
+        )
+
+    def _upload_references(self, references) -> None:
+        """Adjunta todas las referencias del prompt en el mismo mensaje.
+
+        Por el `<input type=file>` del sitio cuando existe —las sube juntas, sin
+        tocar el portapapeles del usuario ni el foco de la máquina— y si no, de a
+        una por el portapapeles, como siempre."""
+        refs = [Path(r) for r in references]
+        missing = [str(r) for r in refs if not r.is_file()]
+        if missing:
+            raise GenerationBlocked(f"el prompt pide referencias que no existen: {', '.join(missing)}")
+        if not self.FILE_INPUT_SELECTORS or self._find_present(self.FILE_INPUT_SELECTORS) is None:
+            for reference in refs:
+                self._upload_reference(reference)
+            return
+        before = self._thumbnail_count()
+        paths = "\n".join(str(r.resolve()) for r in refs)
+        # El input se busca de nuevo en cada intento: si el composer se redibujó
+        # entre que se encontró y se usó, la referencia vieja ya no existe.
+        self._retry_stale(lambda: self._find_present(self.FILE_INPUT_SELECTORS).send_keys(paths))
+        self._wait_for(
+            lambda: self._thumbnail_count() >= before + len(refs),
+            f"las {len(refs)} miniaturas de las referencias adjuntas",
+        )
+        self._check_blocked()
 
     def _upload_reference(self, reference: Path | None) -> None:
         # Ninguno de los dos sitios expone un `<input type=file>` accesible; el
@@ -423,6 +504,54 @@ class WebChatBrowser:
         )
 
     def _submit(self, prompt: str) -> None:
+        editor = self._type_with_cdp(prompt) if self.TYPING == "cdp" else self._type_with_osascript(prompt)
+        self._confirm_and_send(editor, prompt)
+
+    def _retry_stale(self, action, attempts: int = 3):
+        """Corre `action` y, si el elemento se redibujó a mitad de camino, lo
+        vuelve a intentar: la acción tiene que buscar su elemento adentro."""
+        from selenium.common.exceptions import StaleElementReferenceException
+
+        for attempt in range(attempts):
+            try:
+                return action()
+            except StaleElementReferenceException:
+                if attempt == attempts - 1:
+                    raise
+                time.sleep(0.5)
+
+    def _type_with_cdp(self, prompt: str):
+        """Escribe el prompt por el protocolo de Chrome, sin teclas del sistema.
+
+        No necesita el permiso de Accesibilidad ni que Chrome esté al frente:
+        el texto entra por la pestaña, así que otra app que se ponga adelante no
+        se lo lleva. Sirve sólo donde el editor lo toma como input de verdad; la
+        verificación de `_confirm_and_send` es la misma de siempre, así que un
+        sitio que lo ignore aborta antes de enviar, sin gastar cuota."""
+        driver = self._driver()
+
+        def select_all():
+            editor = self._find_first(self.COMPOSE_SELECTORS)
+            if editor is None:
+                raise GenerationBlocked("no encontré el editor para escribir el prompt")
+            driver.execute_script(
+                "const e = arguments[0]; e.focus();"
+                "const r = document.createRange(); r.selectNodeContents(e);"
+                "const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);",
+                editor,
+            )
+            return editor
+
+        # Foco en el editor y TODO su contenido seleccionado: la primera tanda
+        # reemplaza lo que hubiera. ChatGPT guarda el borrador aunque se recargue
+        # la página, y un resto de otra corrida quedaba pegado delante del prompt.
+        editor = self._retry_stale(select_all)
+        for chunk in chunk_prompt(prompt, self.type_chunk):
+            driver.execute_cdp_cmd("Input.insertText", {"text": chunk})
+            time.sleep(self.type_pause)
+        return editor
+
+    def _type_with_osascript(self, prompt: str):
         # El prompt es el texto EXACTO del .md (nunca inventado). El sitio exige
         # input "trusted": send_keys/CDP no habilitan el botón de enviar. Se
         # escribe con keystrokes reales de macOS (System Events), indistinguibles
@@ -486,11 +615,18 @@ class WebChatBrowser:
                     editor, prompt, written, "en la tanda que siguió a la recuperación"
                 )
 
+        return editor
+
+    def _confirm_and_send(self, editor, prompt: str) -> None:
         # ⚠️ El botón de enviar NO sirve como confirmación de que el texto entró:
         # la imagen adjunta sola ya lo habilita (medido: `disabled == False` con
         # el editor vacío). Por eso el runner mandó referencias sin prompt sin
-        # enterarse. Se comprueba el editor, que es el único que sabe.
-        written_text = editor.get_attribute("innerText") or ""
+        # enterarse. Se comprueba el editor, que es el único que sabe. Se lo
+        # vuelve a buscar: después de escribir, el composer puede haberse
+        # redibujado (se expande con el texto largo).
+        written_text = self._retry_stale(
+            lambda: (self._find_first(self.COMPOSE_SELECTORS) or editor).get_attribute("innerText") or ""
+        )
         if not self.prompt_landed(written_text, prompt):
             raise GenerationBlocked(
                 "el prompt no llegó al editor: se escribieron "
@@ -522,9 +658,10 @@ class WebChatBrowser:
         ni de blobs que el sitio revoca."""
         driver = self._driver()
         driver.set_script_timeout(30)
+        refs = tuple(getattr(asset, "references", ()) or ((reference,) if reference else ()))
         self._open_new_chat()
-        if asset.needs_reference:
-            self._upload_reference(reference)
+        if refs:
+            self._upload_references(refs)
         else:
             # Sin referencia no hay paste que enfoque el editor: hay que clickearlo
             # para que los keystrokes de System Events aterricen en el compose box.
@@ -534,7 +671,7 @@ class WebChatBrowser:
         # adjunta (que también es grande). Se espera una imagen grande cuya
         # huella de píxeles NO coincida con la referencia.
         return self._wait_for(
-            lambda: self._extract_generated_png(reference if asset.needs_reference else None),
+            lambda: self._extract_generated_png(refs or None),
             f"la imagen generada por {self.NAME} (distinta de la referencia)",
         )
 
@@ -589,19 +726,28 @@ class WebChatBrowser:
         from PIL import Image
 
         driver = self._driver()
-        ref_fp = None
-        if reference is not None:
-            # Cache POR PATH: con una referencia por prompt, una sola entrada
-            # global haría que la variante de un personaje se comparara contra
-            # la referencia de otro.
-            if not hasattr(self, "_ref_fp_cache"):
-                self._ref_fp_cache = {}
-            key = str(reference)
+        if self.GENERATING_SELECTORS and self._find_present(self.GENERATING_SELECTORS) is not None:
+            return None  # sigue pintando: lo que hay es una vista previa
+        if reference is None:
+            references = ()
+        elif isinstance(reference, (str, Path)):
+            references = (Path(reference),)
+        else:
+            references = tuple(Path(r) for r in reference)
+        # Cache POR PATH: una sola entrada global haría que la variante de un
+        # personaje se comparara contra la referencia de otro. Con varias
+        # referencias adjuntas, cualquiera de ellas puede ser la que aparece en
+        # pantalla, así que se descarta lo que se parezca a CUALQUIERA.
+        if not hasattr(self, "_ref_fp_cache"):
+            self._ref_fp_cache = {}
+        ref_fps = []
+        for ref in references:
+            key = str(ref)
             if key not in self._ref_fp_cache:
-                self._ref_fp_cache[key] = self._fingerprint(Path(reference).read_bytes())
-            ref_fp = self._ref_fp_cache[key]
+                self._ref_fp_cache[key] = self._fingerprint(Path(ref).read_bytes())
+            ref_fps.append(self._ref_fp_cache[key])
 
-        images = driver.find_elements("tag name", "img")
+        images = self._result_images()
         widths = sorted(
             (int(i.get_attribute("naturalWidth") or 0) for i in images), reverse=True
         )
@@ -613,6 +759,9 @@ class WebChatBrowser:
             self._last_report = report
             print(f"  · imgs en pantalla (ancho natural): {report or 'ninguna'}",
                   file=sys.stderr, flush=True)
+
+        if self.FETCH_IN_PAGE:
+            return self._extract_by_fetch(images, ref_fps)
 
         candidates = sorted(
             (i for i in images if int(i.get_attribute("naturalWidth") or 0) >= 512),
@@ -644,8 +793,9 @@ class WebChatBrowser:
                 print("  · descarte: imagen vacía o de color plano (aún renderizando)",
                       file=sys.stderr, flush=True)
                 continue  # placeholder vacío/transparente: esperar el render real
-            if ref_fp is not None:
-                distance = self._fingerprint_distance(self._fingerprint(raw), ref_fp)
+            if ref_fps:
+                fp = self._fingerprint(raw)
+                distance = min(self._fingerprint_distance(fp, ref) for ref in ref_fps)
                 if distance < self.ref_threshold:
                     self._save_discard(raw, distance)
                     print(f"  · descarte: se parece a la referencia "
@@ -654,6 +804,64 @@ class WebChatBrowser:
                     continue  # es la referencia; seguir buscando/esperando
                 print(f"  · candidato aceptado (MAE {distance:.2f})",
                       file=sys.stderr, flush=True)
+            return raw
+        return None
+
+    def _result_images(self) -> list:
+        """Dónde puede estar la imagen generada. Por defecto, en cualquier lado
+        de la página: la huella contra la referencia separa la generada de lo
+        adjunto. Un motor que sabe distinguir los turnos lo sobrescribe."""
+        return self._driver().find_elements("tag name", "img")
+
+    def _fetch_in_page(self, src: str):
+        """Los bytes de una imagen, bajados con la sesión de la propia pestaña.
+        No depende de que el navegador la haya cargado ni pintado."""
+        import base64
+
+        data_url = self._driver().execute_async_script(
+            """
+            const done = arguments[arguments.length - 1];
+            fetch(arguments[0], {credentials: 'include'})
+              .then(r => r.ok ? r.blob() : Promise.reject(r.status))
+              .then(b => { const fr = new FileReader(); fr.onload = () => done(fr.result); fr.readAsDataURL(b); })
+              .catch(e => done('ERR:' + e));
+            """,
+            src,
+        )
+        if not data_url or not str(data_url).startswith("data:image"):
+            return None
+        return base64.b64decode(str(data_url).split(",", 1)[1])
+
+    def _extract_by_fetch(self, images, ref_fps):
+        """La primera imagen de la respuesta que sea un resultado de verdad:
+        grande, con contenido y distinta de las referencias."""
+        from io import BytesIO
+
+        from PIL import Image
+
+        seen = set()
+        for image in images:
+            src = image.get_attribute("src") or ""
+            if not src.startswith("http") or src in seen:
+                continue  # las capas de una misma imagen comparten `src`
+            seen.add(src)
+            raw = self._fetch_in_page(src)
+            if raw is None:
+                continue
+            decoded = Image.open(BytesIO(raw))
+            if min(decoded.size) < 512:
+                continue  # avatares y miniaturas, no un resultado
+            buffer = BytesIO()
+            decoded.convert("RGB").save(buffer, "PNG")
+            raw = buffer.getvalue()
+            if not self._has_content(raw):
+                continue
+            if ref_fps:
+                fp = self._fingerprint(raw)
+                distance = min(self._fingerprint_distance(fp, ref) for ref in ref_fps)
+                if distance < self.ref_threshold:
+                    self._save_discard(raw, distance)
+                    continue
             return raw
         return None
 
