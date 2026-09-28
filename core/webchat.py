@@ -842,7 +842,9 @@ class WebChatBrowser:
         seen = set()
         for image in images:
             src = image.get_attribute("src") or ""
-            if not src.startswith("http") or src in seen:
+            # 2026-09-28: ChatGPT sirve la imagen generada como `blob:` de su
+            # propio origen; `fetch` desde la pestaña la baja igual.
+            if not src.startswith(("http", "blob:")) or src in seen:
                 continue  # las capas de una misma imagen comparten `src`
             seen.add(src)
             raw = self._fetch_in_page(src)

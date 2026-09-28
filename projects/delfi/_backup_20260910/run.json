@@ -1,0 +1,20 @@
+{
+  "completed": [
+    "delfi_malla_02",
+    "delfi_malla_2",
+    "delfi_malla_03",
+    "delfi_malla_3"
+  ],
+  "failures": {
+    "delfi_malla_1": "timeout esperando las 2 miniaturas de las referencias adjuntas",
+    "delfi_malla_2": "timeout esperando las 2 miniaturas de las referencias adjuntas",
+    "delfi_malla_04": "timeout esperando la imagen generada por chat-gpt (distinta de la referencia)"
+  },
+  "last_success": "delfi_malla_3",
+  "downloads": {
+    "delfi_malla_02": "/Users/manuader/Desktop/projects/automatic-image-generation/projects/delfi/output/delfi_malla_02.png",
+    "delfi_malla_2": "/Users/manuader/Desktop/projects/automatic-image-generation/projects/delfi/output/delfi_malla_2.png",
+    "delfi_malla_03": "/Users/manuader/Desktop/projects/automatic-image-generation/projects/delfi/output/delfi_malla_03.png",
+    "delfi_malla_3": "/Users/manuader/Desktop/projects/automatic-image-generation/projects/delfi/output/delfi_malla_3.png"
+  }
+}

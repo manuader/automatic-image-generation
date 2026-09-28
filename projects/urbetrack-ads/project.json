@@ -1,0 +1,7 @@
+{
+  "engine": "chat-gpt",
+  "output": "raw",
+  "sizes": [],
+  "punch_holes": [],
+  "reference_threshold": 4
+}

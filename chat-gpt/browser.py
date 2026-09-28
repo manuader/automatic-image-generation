@@ -93,7 +93,14 @@ class Browser(WebChatBrowser):
     #: enviar, cuando el botón de frenar todavía no existía. Los turnos de
     #: imagen del asistente no llevan `data-message-author-role`, así que se
     #: reconocen por no ser del usuario.
+    #: 2026-09-28: los turnos dejaron de tener `data-testid=conversation-turn-*`
+    #: (0 turnos en la página) y el extractor no veía nada. La imagen generada
+    #: sí trae `alt="Generated image N"`, y la adjunta `alt="User attachment"`:
+    #: si hay generadas se usan ésas, mientras no haya un botón de frenar.
     RESULT_IMAGES_JS = """
+        const generating = document.querySelector('[data-testid=image-gen-loading-state], button[data-testid*=stop], button[aria-label^=Stop]');
+        const generated = [...document.querySelectorAll('img[alt^="Generated image"]')];
+        if (generated.length) return generating ? [] : generated.slice(-1);
         const turns = [...document.querySelectorAll('[data-testid^=conversation-turn-]')];
         let lastUser = -1;
         turns.forEach((t, i) => { if (t.querySelector('[data-message-author-role=user]')) lastUser = i; });
@@ -111,6 +118,8 @@ class Browser(WebChatBrowser):
         ("CSS_SELECTOR", "button[data-testid='composer-submit-button']"),
         ("CSS_SELECTOR", "button[data-testid='send-button']"),
         ("CSS_SELECTOR", "button[aria-label='Send prompt']"),
+        #: 2026-09-28: el botón quedó sin data-testid y con aria-label "Send".
+        ("CSS_SELECTOR", "button[aria-label='Send']"),
         ("CSS_SELECTOR", "button[aria-label='Enviar mensaje']"),
         ("CSS_SELECTOR", "button[aria-label='Enviar prompt']"),
     ]

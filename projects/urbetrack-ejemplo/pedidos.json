@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "key": "sky_py",
+      "type": "horizonte",
+      "title": "Horizonte Paraguay",
+      "subject": "Asunción seen from the bay: the Costanera promenade, the Palacio de López and the modern towers of the Aviadores del Chaco area, lapacho trees in pink bloom"
+    },
+    {
+      "key": "st_py",
+      "type": "calle",
+      "title": "Calle Paraguay",
+      "subject": "a clean avenue in Asunción with pink-blooming lapacho trees and modern low buildings"
+    },
+    {
+      "key": "truck_scale",
+      "type": "recorte",
+      "title": "Balanza de camiones",
+      "aspect": "3:2",
+      "subject": "a modern industrial truck weighbridge (scale platform) at a landfill entrance, white and graphite, with a small graphite reader post with a thin glowing purple ring, three-quarter view"
+    }
+  ],
+  "project": "urbetrack-ejemplo",
+  "objetivo": "Assets para una serie de reels de Paraguay y una balanza de camiones."
+}

@@ -1,0 +1,8 @@
+# 14 — El operario vuelve a casa
+
+- **estado**: hecho
+- **referencia**: adjuntar `references/operator.png`, `references/ref_smart_city.png`
+
+## Prompt
+
+Generate an image. A photorealistic cinematic film still for a premium brand trailer, shot on a large-format cinema camera with a 35mm lens, natural and motivated light, shallow depth of field, gentle film grain, rich depth with clear foreground, midground and background layers (it will be animated with a slow parallax camera move). Color grading in the Urbetrack palette: soft whites, pale lavender atmospheric haze, cool violet shadows, and warm light only where the light source motivates it; brand accents appear ONLY in Urbetrack purple (#6B3FA0) and Urbetrack orange (#F47C20). Elegant, hopeful, human and calm, never gritty or dystopian. People appear only from behind, in silhouette or softly out of focus (no recognizable faces). If the Urbetrack truck appears it is the SAME white garbage compactor truck as the attached truck image (identical design, white bodywork with the purple-to-orange swoosh stripe, amber beacon). Scene: golden hour at the door of a modest, tidy house on a quiet residential street; a sanitation worker in his orange high-visibility uniform (like the attached worker), seen from behind, kneels with open arms as his little daughter runs toward him to hug him; both mostly in soft backlit silhouette against the warm low sun and lavender sky, long shadows, emotional and tender. Wide horizontal landscape image, 16:9 aspect ratio (like 1536x864), full-bleed. ABSOLUTELY NO TEXT of any kind: no letters, no words, no numbers, no logos, no brand names, no license plates, no street signs, no billboards, no watermark, no UI.

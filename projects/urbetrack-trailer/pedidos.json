@@ -1,0 +1,159 @@
+{
+  "items": [
+    {
+      "key": "cine_depot_dawn",
+      "type": "cine",
+      "title": "Depósito al alba: operario y camión",
+      "refs": [
+        "truck_hero.png",
+        "operator.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "pre-dawn blue hour at a clean modern municipal fleet depot; in the foreground, seen from BEHIND, a sanitation worker in an orange high-visibility uniform with gray reflective stripes (like the attached worker) adjusts his vest, a thermos in hand; in the midground the Urbetrack truck with its headlights just switched on, soft light beams in the lavender morning mist; the sky above is a pale lavender-to-peach gradient, calm and quiet, large calm area in the upper third"
+    },
+    {
+      "key": "cine_headlight",
+      "type": "cine",
+      "title": "Faro del camión que se enciende",
+      "subject": "extreme close-up of the front headlight and amber beacon of the Urbetrack truck switching on at dawn, cool lavender mist around, delicate lens flare from the headlight, droplets of dew on the white bodywork, part of the purple-to-orange swoosh visible, very shallow depth of field"
+    },
+    {
+      "key": "cine_truck_sunrise",
+      "type": "cine",
+      "title": "Camión en avenida al amanecer",
+      "subject": "low-angle tracking shot of the Urbetrack truck driving along a wide, clean, tree-lined avenue of a modern Latin American city at sunrise, the first warm sun rays grazing the facades, soft lavender haze down the avenue, light motion blur on the wheels, empty sidewalks, spotless street; upper third calm sky"
+    },
+    {
+      "key": "cine_lift_dawn",
+      "type": "cine",
+      "title": "Levantamiento de contenedor al alba",
+      "refs": [
+        "truck_hero.png",
+        "truck_lift.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "rear three-quarter view of the Urbetrack truck at dawn, its rear hydraulic lifter raising a gray four-wheel 1100-liter street waste container, a sanitation worker in orange uniform seen from behind guiding it, soft backlight from the rising sun through lavender mist, residential street with trees"
+    },
+    {
+      "key": "cine_sweeper_dawn",
+      "type": "cine",
+      "title": "Barredora en calle al alba",
+      "refs": [
+        "sweeper.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "a modern compact white street-sweeper vehicle (like the attached sweeper, with the subtle purple-to-orange swoosh) cleaning a quiet city street at sunrise, gentle mist of water from the brushes backlit by low golden sun, wet glossy asphalt reflecting the sky, lavender haze, clean facades"
+    },
+    {
+      "key": "cine_paper_desk",
+      "type": "cine",
+      "title": "Escritorio de planillas (el antes)",
+      "refs": [
+        "ref_smart_city.png"
+      ],
+      "subject": "a dim, desaturated municipal office desk early in the morning: stacks of paper route forms and clipboards with abstract ruled lines (nothing legible), an old corded desk phone, a cold cup of coffee, a wall clock slightly out of focus, cold gray-blue window light, dust in the air; mood of uncertainty, almost monochrome with only a faint lavender tint"
+    },
+    {
+      "key": "cine_rfid_macro",
+      "type": "cine",
+      "title": "Etiqueta RFID en el contenedor",
+      "refs": [
+        "container.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "macro close-up of the side of a gray plastic street waste container at blue hour, a small flat white RFID tag mounted on it with a tiny soft purple light glowing, dew drops on the plastic, blurred city lights in the lavender background bokeh"
+    },
+    {
+      "key": "cine_sensor_lid",
+      "type": "cine",
+      "title": "Sensor de llenado bajo la tapa",
+      "refs": [
+        "container_sensor.png",
+        "fill_sensor.png"
+      ],
+      "subject": "close-up looking at the underside of an opened gray street waste container lid where a compact white-and-graphite fill-level sensor puck is mounted, a thin purple status ring glowing on it, morning light, shallow depth of field, clean"
+    },
+    {
+      "key": "cine_cab_drive",
+      "type": "cine",
+      "title": "Cabina: conducción con telemetría",
+      "refs": [
+        "scene_cabin.jpg",
+        "truck_hero.png"
+      ],
+      "subject": "inside the cab of the Urbetrack truck driving through the city in the morning, over-the-shoulder view from behind the driver (only the back of the head and shoulders, no face), hands on the steering wheel, a small dashboard tablet glowing with an abstract purple route line on a white map (no text), the city street ahead through the windshield in soft lavender haze"
+    },
+    {
+      "key": "cine_driver_side",
+      "type": "cine",
+      "title": "Conductor y cámara de cabina",
+      "refs": [
+        "scene_cabin.jpg",
+        "camera_module.png"
+      ],
+      "subject": "side profile of a truck driver in the cab, face turned away toward the window and softly out of focus so he is not recognizable, a compact driver-monitoring camera module with a thin purple ring mounted on the dashboard in sharp focus in the foreground, soft daylight"
+    },
+    {
+      "key": "cine_control_room",
+      "type": "cine",
+      "title": "Centro de monitoreo",
+      "refs": [
+        "scene_control.jpg",
+        "ref_smart_city.png"
+      ],
+      "subject": "a bright modern municipal operations center; two operators seen from behind sitting at a curved desk; a large curved video wall showing abstract glowing city maps with purple route lines and small dots (absolutely no text or numbers); soft daylight from a side window, lavender haze, calm"
+    },
+    {
+      "key": "cine_mine_pickup",
+      "type": "cine",
+      "title": "Camioneta de flota en la mina",
+      "refs": [
+        "truck_hero.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "a white 4x4 fleet pickup truck with a subtle purple-to-orange swoosh stripe on its side and a small roof antenna, driving on the dusty terrace road of a vast open-pit mine in the high Andes at golden hour, huge haul trucks far below, dust backlit by the sun, dramatic scale, pale lavender sky"
+    },
+    {
+      "key": "cine_kids_street",
+      "type": "cine",
+      "title": "Chicos caminando a la escuela",
+      "refs": [
+        "ref_smart_city.png",
+        "st_ar.jpg"
+      ],
+      "subject": "a clean, bright, tree-lined sidewalk of a Latin American city in the morning; two children with school backpacks walking away from camera holding hands with an adult (all seen from behind), a clean gray waste container neatly on the curb, sunlight filtering through the trees, lavender haze, warm and hopeful"
+    },
+    {
+      "key": "cine_home_dusk",
+      "type": "cine",
+      "title": "El operario vuelve a casa",
+      "refs": [
+        "operator.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "golden hour at the door of a modest, tidy house on a quiet residential street; a sanitation worker in his orange high-visibility uniform (like the attached worker), seen from behind, kneels with open arms as his little daughter runs toward him to hug him; both mostly in soft backlit silhouette against the warm low sun and lavender sky, long shadows, emotional and tender"
+    },
+    {
+      "key": "cine_fuel_depot",
+      "type": "cine",
+      "title": "Carga de combustible con tag",
+      "refs": [
+        "fuel_pump.png",
+        "truck_hero.png"
+      ],
+      "subject": "at the fleet depot in the morning, the Urbetrack truck parked next to a slim white-and-graphite diesel dispenser whose round RFID reader pad glows with a thin purple ring, the nozzle inserted in the truck tank, a worker's gloved hand on it (only the hand and arm), shallow depth of field on the glowing reader, lavender haze"
+    },
+    {
+      "key": "cine_home_hug",
+      "type": "cine",
+      "title": "Reencuentro al atardecer",
+      "refs": [
+        "operator.png",
+        "ref_smart_city.png"
+      ],
+      "subject": "golden hour on a quiet residential street in front of a modest tidy house; in the FOREGROUND, seen from BEHIND (back to the camera), a sanitation worker in his orange high-visibility uniform (like the attached worker) kneels on one knee with his arms wide open; in front of him, a few meters away, his little daughter runs TOWARD HIM and toward the camera with her arms open, about to hug him, in soft warm backlight so her face is a soft silhouette with no detail; low sun behind her, lavender and peach sky, long shadows, a clear emotional reunion"
+    }
+  ],
+  "project": "urbetrack-trailer",
+  "objetivo": "Fotogramas cinematográficos 16:9 para el tráiler de marca de Urbetrack (TV, 90 s): un día de la ciudad desde el alba hasta el atardecer, con el hilo de un operario de limpieza. Se animan con parallax por profundidad."
+}
