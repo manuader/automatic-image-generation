@@ -1,0 +1,8 @@
+# 16 — Señalética del estudio
+
+- **estado**: hecho
+- **referencia**: adjuntar `references/board_logo.png`
+
+## Prompt
+
+Match EXACTLY the brand system of the attached reference — same studio, same brand. Palette, and nothing outside it: cream background #F6EFE9, ink dark olive-grey #54574F, accent orange #EA6330, deep orange #C94D1D, muted sage grey #8B8E82. The logo is the lowercase word 'oushy' set in a rounded geometric sans (Fredoka), ink grey, with the letter 'u' in orange and an 8-pointed hand-drawn tapered star sitting over it. The 8-pointed star with slightly organic, hand-drawn tapered points is the brand symbol and must keep that exact shape. Reproduce the wordmark and the star with the exact proportions of the reference, never redraw or restyle them. Photographic interior signage mockup, horizontal 16:9, soft architectural daylight coming from the right, realistic materials and soft cast shadows. A minimal studio reception wall finished in cream plaster fills the frame. Mounted on it, centred in the left 60% of the frame, a dimensional sign: the 'oushy' wordmark cut from 2-centimetre-thick ink-grey painted metal letters standing off the wall, with the 8-pointed star cut from brushed orange metal beside it. Below the sign, small ink-grey vinyl uppercase monospaced lettering reads 'ESTUDIO CREATIVO INTEGRAL'. A single tall plant and a corner of a light wooden bench are visible in the right third. Realistic architectural photography, not an illustration. No watermark, no signature, no gibberish text: every letterform must be real, correctly spelled Spanish or English.

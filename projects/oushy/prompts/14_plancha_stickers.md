@@ -1,0 +1,8 @@
+# 14 — Plancha de stickers troquelados
+
+- **estado**: hecho
+- **referencia**: adjuntar `references/board_identidad.png`
+
+## Prompt
+
+Match EXACTLY the brand system of the attached reference — same studio, same brand. Palette, and nothing outside it: cream background #F6EFE9, ink dark olive-grey #54574F, accent orange #EA6330, deep orange #C94D1D, muted sage grey #8B8E82. The logo is the lowercase word 'oushy' set in a rounded geometric sans (Fredoka), ink grey, with the letter 'u' in orange and an 8-pointed hand-drawn tapered star sitting over it. The 8-pointed star with slightly organic, hand-drawn tapered points is the brand symbol and must keep that exact shape. Reproduce the wordmark and the star with the exact proportions of the reference, never redraw or restyle them. Design a square 1:1 sticker sheet: a flat cream #F6EFE9 background holding TEN die-cut stickers laid out in a loose but balanced arrangement with clear space between them, each sticker outlined by a thin white die-cut border. The ten stickers: a solid orange 8-pointed star; an ink-grey outline 8-pointed star; the 'oushy' wordmark; a giant orange letter 'U' with the grey star over it; a cream pill badge with ink-grey uppercase monospaced text 'ARG ▸ WORKING GLOBALLY'; an orange pill badge with cream lowercase text 'todo en un mismo lugar'; a small hand-drawn outline target icon; a small hand-drawn outline play-button icon; a cream circle with the handwritten orange script phrase 'sin fórmulas'; and a small orange lightning-free small 8-pointed star. Flat vector, no shadows, no photographic texture. No watermark, no signature, no gibberish text: every letterform must be real, correctly spelled Spanish or English.

@@ -2,13 +2,17 @@
 
 - **archivo**: `senior_doctor.png`
 - **estado**: hecho
-- **referencia**: adjuntar `references/fisura.png`
+- **referencia**: adjuntar `references/senior_doctor.png`
 - **destino**: output/
 
 ## Prompt
 
-Match EXACTLY the art style, line weight, proportions and color treatment of the attached reference character — same game, same studio.
+The attached image IS this asset, already drawn and approved. Reproduce it EXACTLY: the same drawing, the same line work, the same character, the same face, the same pose, the same props, the same composition, the same big-head / tiny-body cartoon proportions, the same framing.
 
-Médico Senior is the doctor branch of tier 10 in Fisura Evolution — the veteran, more successful upgrade of the junior version, an Argentine merge-idle mobile game where a street survivor evolves all the way into a god. He is a veteran senior doctor standing perfectly upright, one hand adjusting the head mirror on his forehead, a framed diploma tucked under the other arm. The vibe here is renowned specialist with a private practice. Every prop here matters and must stay in — this is the joke: pristine white coat, head mirror, framed diploma under arm, expensive pen in chest pocket, gold wristwatch. Wealth reads as: wealthy professional, gold wristwatch. His expression: calm reassuring smile.
+Do not redraw it. Do not restyle it. Do not "improve" it. Do not change the camera, the crop or the amount of empty margin. Treat this as REPAINTING the attached picture, not as a new illustration of the same idea. Draw exactly ONE figure, once - not a model sheet, not a turnaround. If anything other than the change listed below is different from the attached image, the result is wrong.
 
-Full body standing character, both feet planted on the ground, hands visible, complete figure with generous margins, centered on a plain pure white background, square image, no text, no watermark, no cropping.
+CHANGE ONLY THIS: his coat is pure white, so against the white background it stops being a silhouette. Repaint the very same coat in a cool grey-blue off-white around #D2DCE8, with clear blue-grey folds and shadows around #9FB0C4 and a slightly darker seam line. Do the same with the diploma sheet and the disc of the head mirror. His face, his beard, his hair, his trousers, his shoes and every other colour stay exactly as they are.
+
+Everything else - every line, every shape, every other colour, every prop - stays identical to the attached image. Nothing on the figure may be white or near-white: pure white belongs to the background alone.
+
+Square image, plain pure white background, no text, no watermark, no cropping.

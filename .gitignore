@@ -13,3 +13,11 @@ __pycache__/
 # son el activo del proyecto: copialos aparte, no confíes en git para eso.
 projects/*/output/
 projects/*/state/
+
+# Más salida, por el mismo motivo: los originales que se reemplazaron, lo que se
+# descartó, la hoja de contactos (se regenera con contact_sheet.py) y el binario
+# del upscaler (se baja del release oficial de Real-ESRGAN).
+projects/*/originales-*/
+projects/*/rechazadas/
+projects/*/revision/
+tools/

@@ -1,0 +1,8 @@
+# 08 — Tablet en operación
+
+- **estado**: hecho
+- **referencia**: adjuntar `references/board_foto.png`
+
+## Prompt
+
+Match EXACTLY the brand system of the attached reference — same company, same brand. Palette, and nothing outside it: brand purple #6E4299, brand orange #F38435, near-black navy #171B25, dark slate #282B34, text grey #383838, off-white #F4F4F4, pure white. The symbol is a thick-stroked open-top letter 'U' in purple with straight vertical sides, a semicircular bottom and flat-cut stroke ends, and an orange map-pin marker — a teardrop pointing down with a small white circular hole in it — hanging inside the counter of the U. The wordmark 'URBETRACK' sits to the right of the symbol, uppercase, medium weight Montserrat, with very wide letter-spacing. Reproduce the U, the orange pin and the wordmark exactly as in the reference: never redraw them, never restyle them, never change the spelling. The signature brand graphic is a left-to-right gradient from purple #6E4299 to orange #F38435. Realistic corporate photography, not an illustration and not a 3D render. Photographic mockup, horizontal 16:9, natural daylight, shallow depth of field. A field supervisor in a high-visibility orange vest and a hard hat holds a rugged tablet at chest height, seen over their shoulder from behind and to the right so the screen is legible and occupies 30% of the frame. The screen shows a fleet dashboard: dark navy header with the white U symbol, a map with a purple route and orange pins, and a list of vehicles. In the blurred background, two white service trucks are parked in a yard under an overcast sky. Documentary corporate photography. No watermark, no signature, no gibberish text: every letterform must be real and correctly spelled Spanish.

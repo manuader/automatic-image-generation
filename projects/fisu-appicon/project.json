@@ -1,0 +1,7 @@
+{
+  "engine": "gemini",
+  "output": "raw",
+  "sizes": [],
+  "punch_holes": [],
+  "reference_threshold": 4
+}

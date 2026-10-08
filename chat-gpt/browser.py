@@ -57,6 +57,9 @@ class Browser(WebChatBrowser):
         ("CSS_SELECTOR", "button[data-testid='composer-submit-button']"),
         ("CSS_SELECTOR", "button[data-testid='send-button']"),
         ("CSS_SELECTOR", "button[aria-label='Send prompt']"),
+        # 2026-10-08: el botón perdió el testid y quedó sólo con este label.
+        ("CSS_SELECTOR", "button[aria-label='Send']"),
+        ("CSS_SELECTOR", "button[aria-label='Enviar']"),
         ("CSS_SELECTOR", "button[aria-label='Enviar mensaje']"),
         ("CSS_SELECTOR", "button[aria-label='Enviar prompt']"),
     ]

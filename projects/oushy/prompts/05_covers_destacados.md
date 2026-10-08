@@ -1,0 +1,8 @@
+# 05 — Portadas de historias destacadas
+
+- **estado**: hecho
+- **referencia**: adjuntar `references/board_identidad.png`
+
+## Prompt
+
+Match EXACTLY the brand system of the attached reference — same studio, same brand. Palette, and nothing outside it: cream background #F6EFE9, ink dark olive-grey #54574F, accent orange #EA6330, deep orange #C94D1D, muted sage grey #8B8E82. The logo is the lowercase word 'oushy' set in a rounded geometric sans (Fredoka), ink grey, with the letter 'u' in orange and an 8-pointed hand-drawn tapered star sitting over it. The 8-pointed star with slightly organic, hand-drawn tapered points is the brand symbol and must keep that exact shape. Reproduce the wordmark and the star with the exact proportions of the reference, never redraw or restyle them. Design a sheet of SIX Instagram highlight covers, square 1:1 sheet, arranged on a 3 by 2 grid of six equal circles on a cream #F6EFE9 background with generous spacing between them. Each circle is a flat colour disc containing one centred hand-drawn outline icon in the brand icon style — thick rounded wobbly stroke — plus a tiny word underneath in small uppercase monospaced letters. The six, in order: orange disc with a target icon and the word 'ESTRATEGIA'; cream disc with ink-grey stroke, a letter-U-in-a-rounded-square icon and the word 'IDENTIDAD'; ink-grey disc with cream stroke, a play-button icon and the word 'CONTENIDO'; orange disc with a rising-arrow icon and the word 'PERFORMANCE'; cream disc with an 8-pointed star and the word 'ESTUDIO'; ink-grey disc with a chat bubble and the word 'CONTACTO'. Flat vector, no shadows, no photographic texture. No watermark, no signature, no gibberish text: every letterform must be real, correctly spelled Spanish or English.

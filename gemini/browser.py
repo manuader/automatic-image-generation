@@ -24,6 +24,11 @@ class Browser(WebChatBrowser):
         ("CSS_SELECTOR", "button[aria-label='Send message']"),
     ]
 
+    #: El cartel de "generando". Con la cuota de imágenes agotada Gemini lo deja
+    #: puesto para siempre en vez de avisar (medido: 10 minutos sin cambio, y con
+    #: un prompt trivial sin referencia pasa igual). Ver `_explain_silence`.
+    GENERATING_MARKERS = ("creando tu imagen", "creating your image")
+
     ERROR_PATTERNS = {
         "captcha": "Gemini mostró un CAPTCHA",
         "límite de uso": "Gemini alcanzó su límite de uso",

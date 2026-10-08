@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generador de imágenes por chat web. Un solo comando para todo.
 
-    python3 generate.py --project mi-proyecto
+    .venv/bin/python generate.py --project mi-proyecto
 
 Leé el README.md: dice dónde escribir los prompts y qué queda dónde. Lo mínimo
 para no perderse acá abajo:
@@ -73,6 +73,9 @@ def parse_args() -> argparse.Namespace:
                              "está cargada y se pierden caracteres")
     parser.add_argument("--type-pause", type=float, default=None,
                         help="segundos de respiro entre tandas de tipeo")
+    parser.add_argument("--typing", choices=("cdp", "keystroke"), default=None,
+                        help="cómo se escribe el prompt: cdp (default, no pide "
+                             "Accesibilidad ni la máquina en exclusiva) o keystroke")
     parser.add_argument("--ref-threshold", type=float, default=None,
                         help="distancia MAE bajo la cual se descarta una imagen por "
                              "ser la referencia adjunta")
@@ -80,12 +83,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_browser(browser_class, project: Project | None, args) -> object:
-    from core.webchat import TYPE_CHUNK_CHARS, TYPE_PAUSE_SECONDS
+    from core.webchat import TYPE_CHUNK_CHARS, TYPE_PAUSE_SECONDS, TYPING_DEFAULT
 
     settings = project.settings if project else {}
     threshold = args.ref_threshold
     if threshold is None:
         threshold = settings.get("reference_threshold", 4.0)
+    typing = args.typing or settings.get("typing", TYPING_DEFAULT)
     return browser_class(
         port=args.port,  # None ⇒ el puerto propio del motor
         timeout=args.timeout,
@@ -93,6 +97,7 @@ def build_browser(browser_class, project: Project | None, args) -> object:
         discards_dir=project.discards if project else None,
         type_chunk=args.type_chunk if args.type_chunk is not None else TYPE_CHUNK_CHARS,
         type_pause=args.type_pause if args.type_pause is not None else TYPE_PAUSE_SECONDS,
+        typing=typing,
     )
 
 

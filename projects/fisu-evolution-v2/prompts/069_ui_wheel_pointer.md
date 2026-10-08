@@ -1,0 +1,14 @@
+# 069 - Ruleta, puntero
+
+- **archivo**: `ui_wheel_pointer.png`
+- **estado**: hecho
+- **referencia**: adjuntar `output/ui_wheel_button.png`
+- **grupo**: Ruleta
+
+## Prompt
+
+Match EXACTLY the art style, outline weight and color treatment of the attached reference - same game, same studio.
+
+Using the same colors and materials as the wheel in the attached image, draw ONLY its pointer, alone, seen straight from the front: a chunky gold arrowhead pointing straight down, with a red gem in the middle and a small round pin at the top. No wheel.
+
+Flat, simple icon in the same visual language as the rest of the game: uniform thick black outline, flat colors with minimal cel-shading, no gradients, no photorealism. Centered on a plain pure white background, square image, generous margins, no text, no watermark, no cropping.

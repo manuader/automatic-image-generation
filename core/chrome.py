@@ -11,6 +11,7 @@ abiertas a la vez sin que una desloguee a la otra.
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import time
@@ -55,11 +56,34 @@ def chrome_command(profile: Path, url: str, port: int = DEFAULT_PORT) -> list[st
     ]
 
 
+def targets_url(port: int = DEFAULT_PORT) -> str:
+    return f"http://127.0.0.1:{port}/json"
+
+
 def debug_is_ready(port: int = DEFAULT_PORT) -> bool:
+    """¿Hay un Chrome USABLE en este puerto?
+
+    Usable quiere decir dos cosas y hasta el 2026-08-20 se comprobaba una sola.
+    Que el endpoint conteste no alcanza: si al Chrome aislado le cierran la
+    última ventana, el proceso sigue vivo y `/json/version` sigue devolviendo
+    200, pero `/json` devuelve CERO targets y Selenium no puede engancharse
+    —"unable to discover open pages"—. Con el chequeo viejo `--launch` daba por
+    bueno ese Chrome fantasma y no abría nada, así que el batch fallaba imagen
+    tras imagen contra un navegador sin páginas y el mensaje mandaba a correr
+    justo el comando que acababa de no hacer nada.
+    """
     try:
         with urlopen(debug_url(port), timeout=1) as response:
-            return response.status == 200
-    except (URLError, TimeoutError, OSError):
+            if response.status != 200:
+                return False
+        with urlopen(targets_url(port), timeout=1) as response:
+            if response.status != 200:
+                return False
+            return any(
+                target.get("type") == "page"
+                for target in json.loads(response.read().decode("utf-8"))
+            )
+    except (URLError, TimeoutError, OSError, ValueError):
         return False
 
 

@@ -1,0 +1,7 @@
+{
+  "engine": "gemini",
+  "output": "game-asset",
+  "sizes": [],
+  "punch_holes": [],
+  "reference_threshold": 4
+}

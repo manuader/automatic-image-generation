@@ -331,9 +331,15 @@ class HeadlessTyping(Gemini):
     def _driver(self):
         return self
 
-    def execute_script(self, *_args):
-        # El click al botón de enviar: acá es donde se gastaría la cuota.
-        self.sends += 1
+    def execute_script(self, script, *_args):
+        # Dos scripts distintos pasan por acá y confundirlos haría que enfocar
+        # el editor se contara como una imagen enviada.
+        if "click" in script:
+            # El click al botón de enviar: acá es donde se gastaría la cuota.
+            self.sends += 1
+            return None
+        if "focus" in script:
+            return True  # el editor tomó el foco
         return None
 
 
@@ -385,6 +391,11 @@ class TypingUnderFocusTheftTests(unittest.TestCase):
     def _browser(self, **kwargs):
         kwargs.setdefault("type_chunk", 250)
         kwargs.setdefault("type_pause", 0)
+        # Esta clase entera prueba el camino de System Events: el tipeo por
+        # tandas, la recuperación de foco y el intercalado sólo existen ahí. El
+        # default es `cdp`, que no tiene nada de eso, así que el modo se pide
+        # explícito en vez de heredarlo.
+        kwargs.setdefault("typing", "keystroke")
         return HeadlessTyping(self.system, **kwargs)
 
     def test_the_whole_prompt_is_typed_in_chunks_and_lands_exact(self):
@@ -553,3 +564,236 @@ class TransientDomErrorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HeadlessCdp(HeadlessTyping):
+    """El motor por CDP. La propiedad que el fake tiene que reproducir es UNA:
+    `Input.insertText` escribe en el compose box de Chrome tenga el frente quien
+    lo tenga, porque el texto no pasa por la cola de eventos de macOS. Es lo que
+    separa este camino del de teclas y lo único que estos tests miden."""
+
+    def __init__(self, system, **kwargs):
+        kwargs.setdefault("typing", "cdp")
+        super().__init__(system, **kwargs)
+        self.cdp_calls = []
+
+    def execute_cdp_cmd(self, method, params):
+        self.cdp_calls.append((method, params))
+        if method == "Input.insertText":
+            buffer = self.system.buffers.get(CHROME, "")
+            caret = self.system.carets.get(CHROME, 0)
+            text = params["text"]
+            self.system.buffers[CHROME] = buffer[:caret] + text + buffer[caret:]
+            self.system.carets[CHROME] = caret + len(text)
+        return {}
+
+
+class CdpTypingTests(unittest.TestCase):
+    """El camino default: escribir por DevTools Protocol en vez de System Events.
+
+    Se midió contra Gemini el 2026-08-19 —`Input.insertText` deja el texto en el
+    composer y el botón de enviar aparece habilitado—, y eso desmintió el
+    comentario que decía que sólo las teclas reales sirven: lo que no funciona es
+    `send_keys` de Selenium, que es otra cosa. Lo que estos tests protegen son
+    las tres consecuencias de esa medición, que es donde está el valor: no hace
+    falta el permiso de Accesibilidad, no hace falta la máquina en exclusiva, y
+    el prompt barajado deja de ser posible.
+    """
+
+    PROMPT = ("Match EXACTLY the attached reference, cream background. " * 40)[:2099]
+
+    def setUp(self):
+        self.system = FakeSystemEvents()
+        self._patch("subprocess", self.system)
+        self._patch("time", NoSleep)
+
+    def _patch(self, name, value):
+        original = getattr(webchat, name)
+        setattr(webchat, name, value)
+        self.addCleanup(setattr, webchat, name, original)
+
+    def _browser(self, **kwargs):
+        kwargs.setdefault("type_pause", 0)
+        return HeadlessCdp(self.system, **kwargs)
+
+    def test_the_prompt_goes_whole_in_one_call_and_sends_once(self):
+        browser = self._browser()
+
+        browser._submit(self.PROMPT)
+
+        inserts = [p["text"] for m, p in browser.cdp_calls if m == "Input.insertText"]
+        # Una sola llamada, no tandas: las tandas existen para acotar el daño de
+        # un robo de foco, y por CDP ese daño no puede ocurrir.
+        self.assertEqual(inserts, [self.PROMPT])
+        self.assertEqual(self.system.typed, self.PROMPT)
+        self.assertEqual(browser.sends, 1)
+
+    def test_a_thief_at_the_front_does_not_cost_a_single_character(self):
+        # La ventana ajena está adelante TODO el tiempo. Por el camino de teclas
+        # esto era el fallo caro: el prompt entero aterrizaba en la otra app.
+        self.system = FakeSystemEvents(frontmost=("Otro Agente",))
+        self._patch("subprocess", self.system)
+
+        browser = self._browser()
+        browser._submit(self.PROMPT)
+
+        self.assertEqual(self.system.typed, self.PROMPT)
+        self.assertEqual(self.system.foreign_keys, [])
+        self.assertEqual(browser.sends, 1)
+
+    def test_the_default_path_never_touches_system_events(self):
+        browser = self._browser()
+
+        browser._submit(self.PROMPT)
+
+        # Cada una de estas tres es un requisito que vuelve si alguien mete una
+        # tecla de vuelta: el permiso de Accesibilidad, el robo de frente y la
+        # espera del `activate`.
+        self.assertEqual(self.system.keystrokes, 0)
+        self.assertEqual(self.system.activates, 0)
+        self.assertEqual(self.system.frontmost_queries, 0)
+
+    def test_a_prompt_that_does_not_land_is_caught_before_sending(self):
+        class Lossy(HeadlessCdp):
+            def execute_cdp_cmd(self, method, params):
+                if method == "Input.insertText":
+                    params = dict(params, text=params["text"][:10])
+                return super().execute_cdp_cmd(method, params)
+
+        browser = Lossy(self.system, type_pause=0)
+
+        with self.assertRaises(GenerationBlocked) as caught:
+            browser._submit(self.PROMPT)
+
+        self.assertIn("no llegó al editor", str(caught.exception))
+        # Lo que importa: no se gastó cuota contra medio prompt.
+        self.assertEqual(browser.sends, 0)
+
+
+class TypingModeTests(unittest.TestCase):
+    """El modo se elige una vez, al construir, y un valor inventado se cae ahí.
+
+    Fallar en el constructor y no en la imagen 7 de 20 es la diferencia entre
+    perder un segundo y perder media tanda."""
+
+    def test_an_unknown_mode_is_refused_at_construction(self):
+        with self.assertRaises(ValueError) as caught:
+            Gemini(typing="teclas")
+        self.assertIn("teclas", str(caught.exception))
+
+    def test_the_default_is_cdp(self):
+        self.assertEqual(Gemini().typing, "cdp")
+
+
+class SilentQuotaTests(unittest.TestCase):
+    """La cuota de IMÁGENES agotada no dice nada: deja el cartel de "generando".
+
+    El 2026-08-19, con 18 de 20 ya hechas, las dos últimas fallaron con `timeout
+    esperando la imagen generada` y ese mensaje mandó a subir `--timeout` a 480s
+    y a reintentar tres veces, todo para nada. Lo que este test protege es el
+    diagnóstico, no la mecánica: un timeout con el cartel puesto tiene que
+    decirse distinto de un timeout a secas, porque la reacción correcta es otra
+    —esperar, no insistir—.
+    """
+
+    class Silent(Gemini):
+        """Un motor cuya página quedó en «Creando tu imagen»."""
+
+        def __init__(self, page):
+            super().__init__()
+            self.page = page
+
+        def _driver(self):
+            return self
+
+        @property
+        def page_source(self):
+            return self.page
+
+    def test_a_timeout_with_the_generating_sign_up_blames_the_image_quota(self):
+        browser = self.Silent("<div>Creando tu imagen</div>")
+
+        explained = browser._explain_silence(GenerationBlocked("timeout esperando la imagen"))
+
+        self.assertIn("cuota de IMÁGENES agotada", str(explained))
+        self.assertIn("--timeout no cambia nada", str(explained))
+
+    def test_the_english_sign_counts_too(self):
+        browser = self.Silent("<div>Creating your image</div>")
+        self.assertIn("creating your image", str(browser._explain_silence(GenerationBlocked("x"))))
+
+    def test_a_timeout_without_the_sign_keeps_its_own_message(self):
+        # Sin el cartel el timeout puede ser cualquier cosa —la red, el DOM, un
+        # selector viejo—, y culpar a la cuota mandaría a esperar de gusto.
+        original = GenerationBlocked("timeout esperando el botón de enviar")
+        browser = self.Silent("<div>respuesta normal</div>")
+
+        self.assertIs(browser._explain_silence(original), original)
+
+    def test_a_page_that_cannot_be_read_keeps_the_original_error(self):
+        class Broken(SilentQuotaTests.Silent):
+            @property
+            def page_source(self):
+                raise RuntimeError("la pestaña se cerró")
+
+        original = GenerationBlocked("timeout esperando la imagen")
+        self.assertIs(Broken("")._explain_silence(original), original)
+
+
+class VisibleTextTests(unittest.TestCase):
+    """El bloqueo se busca en lo que la página muestra, no en su JavaScript."""
+
+    class Page(Gemini):
+        def __init__(self, source, visible):
+            super().__init__()
+            self.source, self.visible = source, visible
+
+        def _driver(self):
+            return self
+
+        @property
+        def page_source(self):
+            return self.source
+
+        def execute_script(self, script, *args):
+            return self.visible
+
+    def test_a_limit_template_in_the_code_does_not_block(self):
+        # La plantilla real de ChatGPT, con el chat libre en pantalla.
+        page = self.Page('{"active_task_limit_message_template":"Llegaste a tu límite de uso"}',
+                         "What's on the agenda today?")
+        page._check_blocked()
+
+    def test_a_limit_on_screen_blocks(self):
+        page = self.Page("<html></html>", "Llegaste a tu límite de uso. Volvé mañana.")
+        with self.assertRaises(GenerationBlocked):
+            page._check_blocked()
+
+
+class CandidateSizeTests(unittest.TestCase):
+    """Una pieza de diseño puede ser angosta y alta, y sigue siendo la generada.
+
+    El 2026-08-20 un roll-up de feria de 420x1008 se generó bien y quedó en
+    pantalla, pero el filtro de candidatos miraba el ANCHO contra 512, así que
+    nunca compitió: el pedido murió en `timeout esperando la imagen generada` con
+    la imagen a la vista. Es el mismo supuesto cuadrado que rechazaba los banners
+    apaisados en `verify_png`.
+    """
+
+    def test_a_tall_rollup_competes(self):
+        self.assertTrue(Gemini.is_candidate_size(420, 1008))
+
+    def test_a_wide_banner_competes(self):
+        self.assertTrue(Gemini.is_candidate_size(1024, 254))
+
+    def test_a_square_generation_still_competes(self):
+        self.assertTrue(Gemini.is_candidate_size(1024, 1024))
+
+    def test_the_sites_own_chrome_never_competes(self):
+        # Los tamaños medidos en la página de Gemini: sparkle, foto de perfil y
+        # los íconos de la barra. Si alguno pasara, se guardaría como si fuera
+        # la imagen generada.
+        for width, height in ((150, 150), (128, 128), (64, 64), (32, 32)):
+            self.assertFalse(
+                Gemini.is_candidate_size(width, height), f"pasó un {width}x{height}"
+            )

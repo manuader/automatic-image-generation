@@ -5,12 +5,15 @@ leyendo documentación: son las defensas anti-bot de un chat web, medidas a los
 golpes contra Gemini durante meses. Cada rareza tiene su comentario con la fecha
 y el síntoma, porque la que parece de más es siempre la que arregló algo:
 
-- se tipea con `keystroke` de System Events y no con `send_keys`, porque el
-  editor exige input "trusted" y con Selenium el botón de enviar no se habilita;
-- se tipea POR TANDAS y se pregunta quién está al frente antes de cada una,
-  porque una ventana que roba el foco a mitad de camino se lleva el prompt entero;
-- la referencia se adjunta por portapapeles, porque no hay `<input type=file>`
-  al que llegar;
+- se tipea con `Input.insertText` de CDP y no con `send_keys`, porque el editor
+  exige input "trusted" y con Selenium el botón de enviar no se habilita —pero
+  sí con CDP, que llega a la página con `isTrusted == true` (§1 del README);
+- queda el camino viejo por System Events (`--typing keystroke`), y ahí se tipea
+  POR TANDAS preguntando quién está al frente antes de cada una, porque una
+  ventana que roba el foco a mitad de camino se lleva el prompt entero;
+- la referencia se adjunta con un evento `paste` sintético que lleva el archivo
+  adentro, porque no hay `<input type=file>` al que llegar y el portapapeles del
+  sistema no se puede leer con la ventana ocluida;
 - la imagen se saca por canvas de los píxeles ya renderizados, porque el botón
   de descarga sólo existe con el mouse encima y los blobs se revocan;
 - y se compara contra una huella de la referencia, porque la imagen adjunta
@@ -24,6 +27,7 @@ las que ese sitio dice "no puedo". Nada más.
 
 from __future__ import annotations
 
+import base64
 import subprocess
 import sys
 import time
@@ -52,6 +56,57 @@ FRONTMOST_TIMEOUT_SECONDS = 10
 #: Nombre del proceso tal como lo reporta System Events (el launcher abre
 #: siempre Chrome estable, nunca Canary).
 CHROME_PROCESS_NAME = "Google Chrome"
+
+#: Los dos caminos para meter el prompt en el editor.
+#:
+#: `cdp` — el default. `Input.insertText` del DevTools Protocol: el evento llega
+#: a la página con `isTrusted == true`, que es lo único que el sitio mira, así
+#: que el botón de enviar se habilita igual que con un humano (medido contra
+#: Gemini el 2026-08-19: composer con texto y `send_button` presente y
+#: `enabled`). El comentario viejo de `_submit` decía que CDP no habilitaba el
+#: botón; se probó y es falso —lo que no funciona es `send_keys` de Selenium, que
+#: es otra cosa. Que ande importa por tres motivos, no uno: no pide el permiso de
+#: Accesibilidad de macOS, no le roba el frente a nadie —o sea que el batch deja
+#: de necesitar la máquina para él solo— y hace imposible el intercalado, porque
+#: el texto no pasa por la cola de eventos del sistema.
+#:
+#: `keystroke` — el camino histórico (System Events). Se queda porque es el que
+#: generó 335 imágenes y porque si algún día un sitio empieza a mirar algo más
+#: que `isTrusted`, es el que sigue siendo indistinguible de una persona. Exige
+#: el permiso de Accesibilidad y la máquina en exclusiva.
+TYPING_MODES = ("cdp", "keystroke")
+TYPING_DEFAULT = "cdp"
+
+#: "¿Este elemento está visible?" contestado por el DOM: tiene caja, está en el
+#: documento y ningún estilo lo esconde. Reemplaza a `is_displayed()` de Selenium
+#: por lo que se explica en `_find_first` — con la ventana ocluida aquél contesta
+#: `False` para elementos que están perfectamente ahí.
+ELEMENT_VISIBLE_JS = """
+const el = arguments[0];
+if (!el || !el.isConnected) return false;
+const rect = el.getBoundingClientRect();
+if (rect.width <= 0 || rect.height <= 0) return false;
+const style = getComputedStyle(el);
+return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+"""
+
+#: Mete un archivo en el editor como si el usuario lo hubiera pegado. Recibe el
+#: PNG en base64, el elemento y el nombre; devuelve cuántos archivos llevaba el
+#: evento, que es lo que confirma que se construyó bien. El `File` se arma en la
+#: página —no viaja como objeto— porque lo único que cruza el puente de Selenium
+#: es texto. Ver `_upload_reference` para por qué este camino y no el portapapeles.
+PASTE_FILE_JS = """
+const [b64, element, name] = [arguments[0], arguments[1], arguments[2]];
+const binary = atob(b64);
+const bytes = new Uint8Array(binary.length);
+for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+const transfer = new DataTransfer();
+transfer.items.add(new File([bytes], name, {type: 'image/png'}));
+element.dispatchEvent(new ClipboardEvent('paste', {
+  clipboardData: transfer, bubbles: true, cancelable: true,
+}));
+return transfer.files.length;
+"""
 
 
 def applescript_string(text: str) -> str:
@@ -110,6 +165,13 @@ class WebChatBrowser:
     SEND_BUTTON_SELECTORS: list[tuple[str, str]] = []
     #: Frase en la página → por qué está bloqueado. Se busca en minúsculas.
     ERROR_PATTERNS: dict[str, str] = {}
+    #: Lado largo mínimo para que una `<img>` de la página compita como imagen
+    #: generada. Ver `is_candidate_size`.
+    CANDIDATE_LONG_SIDE = 512
+    #: Cómo dice este sitio "estoy generando", en minúsculas. No es un bloqueo:
+    #: se busca SÓLO cuando ya venció el timeout, para distinguir "tardó" de "no
+    #: va a contestar nunca". Ver `_explain_silence`.
+    GENERATING_MARKERS: tuple[str, ...] = ()
     #: Frases que comparten substring con un bloqueo real pero NO bloquean nada.
     #: El banner "estás por alcanzar el límite de uso" es un aviso preventivo: el
     #: chat sigue generando. Como contiene "límite de uso", sin sacarlo antes de
@@ -125,9 +187,14 @@ class WebChatBrowser:
         discards_dir: Path | None = None,
         type_chunk: int = TYPE_CHUNK_CHARS,
         type_pause: float = TYPE_PAUSE_SECONDS,
+        typing: str = TYPING_DEFAULT,
     ):
         self.port = self.DEBUG_PORT if port is None else int(port)
         self.timeout = timeout
+        #: Cómo se escribe el prompt: `cdp` o `keystroke`. Ver TYPING_MODES.
+        if typing not in TYPING_MODES:
+            raise ValueError(f"modo de tipeo desconocido: {typing!r} (hay: {TYPING_MODES})")
+        self.typing = typing
         # Tamaño de tanda y respiro entre tandas al tipear el prompt (ver
         # TYPE_CHUNK_CHARS). El piso del tamaño lo pone `chunk_prompt`, que es
         # quien tiene que aguantar cualquier número: una sola fuente de verdad.
@@ -165,7 +232,7 @@ class WebChatBrowser:
         except Exception as error:  # Selenium expone tipos distintos según driver.
             raise GenerationBlocked(
                 f"no pude conectar Selenium al Chrome aislado en el puerto {self.port}. "
-                f"Abrilo con: python3 generate.py --engine {self.NAME} --launch"
+                f"Abrilo con: .venv/bin/python generate.py --engine {self.NAME} --launch"
             ) from error
         return self.driver
 
@@ -179,20 +246,74 @@ class WebChatBrowser:
                 return reason
         return None
 
+    def _visible_text(self) -> str:
+        """Lo que la página MUESTRA, no su código.
+
+        ⚠️ 2026-10-08: se buscaba en `page_source`, y ChatGPT trae en su JS la
+        plantilla "You've reached your limit of {active_limit} active tasks".
+        El probe y cada imagen daban "límite de uso" con el chat libre, y el
+        batch tuvo a ChatGPT en pausa toda una noche sin motivo."""
+        return self._driver().execute_script(
+            "return document.body ? document.body.innerText : '';"
+        ) or ""
+
     def _check_blocked(self) -> None:
-        reason = self.contains_error(self._driver().page_source)
+        reason = self.contains_error(self._visible_text())
         if reason:
             raise GenerationBlocked(reason)
 
+    @classmethod
+    def is_candidate_size(cls, width: int, height: int) -> bool:
+        """¿Esta `<img>` de la página puede ser la imagen generada?
+
+        Se mide el lado LARGO. ⚠️ 2026-08-20: se medía el ancho, y con eso un
+        roll-up de feria de 420x1008 —generado, correcto, en pantalla— no entraba
+        nunca en la lista de candidatos: el pedido moría en `timeout esperando la
+        imagen generada` con la imagen ahí. Es el mismo supuesto de "todo es
+        cuadrado" que rechazaba las piezas apaisadas en `verify_png`, y en las dos
+        el arreglo es el mismo: una pieza de diseño puede ser angosta y alta o
+        ancha y baja, y sigue siendo grande.
+
+        El piso sigue volteando lo que tiene que voltear, que es la iconografía
+        del propio sitio compitiendo como candidata: medidos en Gemini, 150x150,
+        128x128, 64x64 y 32x32 no llegan a 512 por ningún lado.
+        """
+        return max(width, height) >= cls.CANDIDATE_LONG_SIDE
+
     def _find_first(self, selectors: list[tuple[str, str]]):
+        """El primer elemento visible y habilitado de la lista.
+
+        ⚠️ 2026-08-19: la visibilidad se pregunta en la página y NO con
+        `is_displayed()` de Selenium, que acá miente. Con la ventana de Chrome
+        tapada por otra app —normal en una tanda larga— la pestaña pasa a
+        `visibilityState == "hidden"` y chromedriver empieza a contestar `False`
+        para casi todo: medido sobre el botón de enviar, `is_displayed()` daba
+        `False` mientras el elemento tenía rect de 32x32, `display: flex`,
+        `visibility: visible` y `opacity: 1`. Con eso, `welcome_kit` y
+        `mockup_presentacion` murieron en `timeout esperando el botón de enviar`
+        con la imagen a un click de distancia.
+
+        Que el DOM sea la única fuente es lo coherente con el resto del archivo:
+        esta herramienta maneja una ventana de fondo a propósito, así que si la
+        tapan tiene que seguir funcionando igual. Ocluir no es ocultar.
+        """
         from selenium.webdriver.common.by import By
 
         driver = self._driver()
         for kind, value in selectors:
             elements = driver.find_elements(getattr(By, kind), value)
             for element in elements:
-                if element.is_displayed() and element.is_enabled():
-                    return element
+                # El DOM se rehace entre el `find_elements` y las preguntas: el
+                # sitio reemplaza el composer y la barra de envío mientras la
+                # respuesta se arma. Un elemento que se murió en el medio no es
+                # un error, es "ése ya no": se pasa al siguiente. Sin esto la
+                # excepción sube cruda y se lleva la imagen — pasó con
+                # `dashboard_hero`, que después salió bien al reintentar.
+                try:
+                    if element.is_enabled() and driver.execute_script(ELEMENT_VISIBLE_JS, element):
+                        return element
+                except TRANSIENT_DOM_ERRORS:
+                    continue
         return None
 
     def _wait_for(self, action, description: str):
@@ -229,6 +350,27 @@ class WebChatBrowser:
             f"el cuadro de prompt de {self.NAME} (confirmá el login en el Chrome aislado)",
         )
 
+    def _clear_draft(self) -> None:
+        """Vacía el editor antes de pegar la referencia y escribir.
+
+        ⚠️ 2026-10-07: Gemini guarda el borrador y lo devuelve en el chat nuevo.
+        Un intento abortado por el guard dejaba su prompt adentro y el siguiente
+        escribía encima: medido, "1503 de 1478" y después "2998 de 1478", y la
+        imagen se perdía por un texto que nadie veía. Va antes del paste para no
+        tocar el adjunto."""
+        field = self._focus_editor_dom()
+        if not (field.get_attribute("innerText") or "").strip():
+            return
+        self._driver().execute_script(
+            "document.execCommand('selectAll'); document.execCommand('delete');"
+        )
+        time.sleep(0.3)
+        left = (field.get_attribute("innerText") or "").strip()
+        if left:
+            raise GenerationBlocked(
+                f"el editor no aceptó vaciarse: quedaron {len(left)} caracteres del borrador"
+            )
+
     def _focus_compose(self) -> None:
         """Clickea el compose box para darle foco DOM (imágenes sin referencia,
         que no tienen paste). Sin esto los keystrokes de System Events se pierden."""
@@ -237,36 +379,86 @@ class WebChatBrowser:
             field.click()
             time.sleep(0.3)
 
+    def _focus_editor_dom(self):
+        """Deja el editor enfocado de verdad y devuelve el elemento.
+
+        ⚠️ 2026-08-19: acá alcanzaba con `field.click()` de Selenium y **no
+        alcanza**. Con la ventana de Chrome atrás, la pestaña queda
+        `visibilityState == "hidden"` y el click no mueve el foco: medido,
+        `document.activeElement` seguía siendo `BODY`. De ahí salían los dos
+        fallos que parecían distintos y eran el mismo — el paste que no pegaba
+        nada y el texto que no aparecía en el composer.
+
+        Las dos mitades hacen falta y ninguna sola sirve. `Page.bringToFront`
+        despierta la pestaña (pasa a `visible` y `document.hasFocus()` a `true`,
+        que es lo que el navegador exige para leer el portapapeles) y el
+        `focus()` por JS pone el cursor DENTRO del contenteditable, que es donde
+        `Input.insertText` escribe. Se comprueba el resultado en la misma
+        llamada: un foco que no aterrizó es una imagen generada contra un prompt
+        vacío, y es más barato abortar acá.
+        """
+        driver = self._driver()
+        driver.execute_cdp_cmd("Page.bringToFront", {})
+        field = self._find_first(self.COMPOSE_SELECTORS)
+        if field is None:
+            raise GenerationBlocked(f"no encontré el cuadro de prompt de {self.NAME}")
+        focused = driver.execute_script(
+            "arguments[0].focus(); return document.activeElement === arguments[0];", field
+        )
+        if not focused:
+            raise GenerationBlocked(
+                "el editor no tomó el foco: lo que se escriba se pierde. "
+                "¿Se cerró la ventana aislada de Chrome?"
+            )
+        time.sleep(0.3)
+        return field
+
     def _upload_reference(self, reference: Path | None) -> None:
-        # Ninguno de los dos sitios expone un `<input type=file>` accesible; el
-        # camino confiable es pegar la imagen desde el portapapeles del sistema
-        # (macOS) con cmd+v.
+        """Adjunta la referencia al chat sin pasar por el portapapeles del sistema.
+
+        Ninguno de los dos sitios expone un `<input type=file>` (medido contra
+        Gemini: cero en la página), así que el adjunto tiene que entrar por un
+        evento `paste`. La pregunta era de dónde sale el archivo, y se probaron
+        los tres caminos en orden de menos a más independiente del entorno:
+
+        1. `send_keys(⌘V)` de Selenium — **no pega nada**. Chromedriver manda la
+           combinación como evento de teclado y un ⌘V suelto no invoca el comando
+           de edición del navegador.
+        2. CDP `Input.dispatchKeyEvent` con `commands: ["paste"]` — sí lo invoca,
+           pero lee el portapapeles del SISTEMA, y para eso Chrome exige que el
+           documento no esté oculto. Con la ventana ocluida —cosa normal en un
+           batch largo: alcanza con que otra app la tape— `visibilityState` pasa
+           a `hidden` y el paste devuelve vacío. Así se perdieron `welcome_kit` y
+           `mockup_presentacion` con el resto de la tanda ya generada.
+        3. El archivo inyectado en un `DataTransfer` y despachado como evento
+           `paste` sintético. **Es el que queda.** No toca el portapapeles, así
+           que no compite con lo que el dueño de la máquina tenga copiado, y
+           sobre todo anda con `visibilityState == "hidden"` —medido—, que es lo
+           único que hacía frágil al anterior.
+        """
         if reference is None or not Path(reference).is_file():
             raise GenerationBlocked(f"el prompt pide una referencia y no existe: {reference}")
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.common.keys import Keys
 
-        script = (
-            'set the clipboard to (read (POSIX file "%s") as «class PNGf»)'
-            % str(Path(reference).resolve())
-        )
-        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-        if result.returncode != 0:
+        field = self._focus_editor_dom()
+        driver = self._driver()
+        payload = base64.b64encode(Path(reference).read_bytes()).decode("ascii")
+        if not driver.execute_script(PASTE_FILE_JS, payload, field, Path(reference).name):
             raise GenerationBlocked(
-                f"no pude cargar la referencia al portapapeles: {result.stderr.strip()}"
+                f"el editor no aceptó el evento paste de {Path(reference).name}"
             )
 
-        field = self._find_first(self.COMPOSE_SELECTORS)
-        if field is None:
-            raise GenerationBlocked("no encontré el cuadro de prompt para pegar la referencia")
-        field.click()
-        time.sleep(0.4)
-        field.send_keys(Keys.COMMAND, "v")
-
-        driver = self._driver()
+        # ⚠️ El adjunto se reconoce por `blob:`/`data:`, no por el tamaño. Antes
+        # alcanzaba con cualquier `<img>` de más de 100px y eso da falso positivo
+        # con la UI del propio sitio: en Gemini el sparkle (150x150) y la foto de
+        # perfil (128x128) lo cumplen los dos, así que el guard aprobaba pastes
+        # que nunca ocurrieron y se generaba contra el prompt sin referencia. Una
+        # imagen que subió el usuario vive en un blob de la sesión; una del sitio
+        # viene de gstatic.
         self._wait_for(
             lambda: any(
-                int(img.get_attribute("naturalWidth") or 0) > 100
+                (img.get_attribute("src") or "").startswith(("blob:", "data:"))
+                and int(img.get_attribute("naturalWidth") or 0) > 100
                 for img in driver.find_elements(By.TAG_NAME, "img")
             ),
             "la miniatura de la referencia adjunta",
@@ -423,10 +615,66 @@ class WebChatBrowser:
         )
 
     def _submit(self, prompt: str) -> None:
-        # El prompt es el texto EXACTO del .md (nunca inventado). El sitio exige
-        # input "trusted": send_keys/CDP no habilitan el botón de enviar. Se
-        # escribe con keystrokes reales de macOS (System Events), indistinguibles
-        # de un humano.
+        """Escribe el prompt en el editor y envía. El prompt es el texto EXACTO
+        del .md, nunca inventado; los dos caminos lo escriben carácter por
+        carácter y ninguno lo toca."""
+        if self.typing == "cdp":
+            self._submit_cdp(prompt)
+            return
+        self._submit_keystroke(prompt)
+
+    def _send_now(self, prompt: str) -> None:
+        """Comprueba que el prompt esté entero en el editor y recién ahí envía.
+
+        ⚠️ El botón de enviar NO sirve como confirmación de que el texto entró:
+        la imagen adjunta sola ya lo habilita (medido: `disabled == False` con el
+        editor vacío). Por eso el runner mandó referencias sin prompt sin
+        enterarse. Se comprueba el editor, que es el único que sabe."""
+        editor = self._find_first(self.COMPOSE_SELECTORS)
+        written_text = (editor.get_attribute("innerText") or "") if editor else ""
+        if not self.prompt_landed(written_text, prompt):
+            raise GenerationBlocked(
+                "el prompt no llegó al editor: se escribieron "
+                f"{len(written_text.strip())} de {len(prompt)} caracteres. "
+                "Sin esto se enviaría la referencia sin instrucción."
+            )
+        send = self._wait_for(
+            lambda: self._find_first(self.SEND_BUTTON_SELECTORS),
+            f"el botón de enviar de {self.NAME}",
+        )
+        # Click directo del botón (Return no siempre envía); confirmar que la
+        # conversación arranca por el cambio de URL.
+        driver = self._driver()
+        driver.execute_script("arguments[0].click();", send)
+        self._wait_for(
+            lambda: self.CONVERSATION_URL_MARK in driver.current_url,
+            f"que {self.NAME} abra la conversación tras enviar",
+        )
+
+    def _submit_cdp(self, prompt: str) -> None:
+        """Escribe el prompt con `Input.insertText` del DevTools Protocol.
+
+        Va en UNA llamada y no en tandas a propósito: las tandas existen para
+        acotar el daño de un robo de foco a mitad de tipeo (ver
+        TYPE_CHUNK_CHARS), y por CDP el texto no pasa por la cola de eventos del
+        sistema —entra directo en el documento— así que ese fallo no puede
+        ocurrir. Sin tandas tampoco hace falta recuperar el frente, ni el
+        pre-tipeo descartable, ni verificar prefijos intermedios: la única
+        pregunta que queda es la de siempre, si el prompt entero llegó al
+        editor, y la contesta `_send_now`.
+
+        Lo que sí hace falta es el foco DOM: `insertText` escribe en el elemento
+        activo, y el editor Quill de Gemini lo suelta al `<body>` después de
+        pegar la referencia. Sin `_focus_editor_dom` el texto se pierde.
+        """
+        self._focus_editor_dom()
+        self._driver().execute_cdp_cmd("Input.insertText", {"text": prompt})
+        time.sleep(self.type_pause)
+        self._send_now(prompt)
+
+    def _submit_keystroke(self, prompt: str) -> None:
+        # El sitio exige input "trusted". Se escribe con keystrokes reales de
+        # macOS (System Events), indistinguibles de un humano.
         #
         # ⚠️ 2026-08-06: acá decía "NO clickear el campo, el foco OS-level viene
         # del paste". Eso valía para la UI vieja de Gemini. La nueva (un editor
@@ -486,30 +734,7 @@ class WebChatBrowser:
                     editor, prompt, written, "en la tanda que siguió a la recuperación"
                 )
 
-        # ⚠️ El botón de enviar NO sirve como confirmación de que el texto entró:
-        # la imagen adjunta sola ya lo habilita (medido: `disabled == False` con
-        # el editor vacío). Por eso el runner mandó referencias sin prompt sin
-        # enterarse. Se comprueba el editor, que es el único que sabe.
-        written_text = editor.get_attribute("innerText") or ""
-        if not self.prompt_landed(written_text, prompt):
-            raise GenerationBlocked(
-                "el prompt no llegó al editor: se escribieron "
-                f"{len(written_text.strip())} de {len(prompt)} caracteres. "
-                "Sin esto se enviaría la referencia sin instrucción."
-            )
-
-        send = self._wait_for(
-            lambda: self._find_first(self.SEND_BUTTON_SELECTORS),
-            f"el botón de enviar de {self.NAME}",
-        )
-        # Click directo del botón (Return no siempre envía); confirmar que la
-        # conversación arranca por el cambio de URL.
-        driver = self._driver()
-        driver.execute_script("arguments[0].click();", send)
-        self._wait_for(
-            lambda: self.CONVERSATION_URL_MARK in driver.current_url,
-            f"que {self.NAME} abra la conversación tras enviar",
-        )
+        self._send_now(prompt)
 
     # ------------------------------------------------------------- generación
 
@@ -523,6 +748,7 @@ class WebChatBrowser:
         driver = self._driver()
         driver.set_script_timeout(30)
         self._open_new_chat()
+        self._clear_draft()
         if asset.needs_reference:
             self._upload_reference(reference)
         else:
@@ -533,9 +759,44 @@ class WebChatBrowser:
         # La imagen GENERADA vive en la respuesta y difiere de la referencia
         # adjunta (que también es grande). Se espera una imagen grande cuya
         # huella de píxeles NO coincida con la referencia.
-        return self._wait_for(
-            lambda: self._extract_generated_png(reference if asset.needs_reference else None),
-            f"la imagen generada por {self.NAME} (distinta de la referencia)",
+        try:
+            return self._wait_for(
+                lambda: self._extract_generated_png(reference if asset.needs_reference else None),
+                f"la imagen generada por {self.NAME} (distinta de la referencia)",
+            )
+        except GenerationBlocked as error:
+            raise self._explain_silence(error) from error
+
+    def _explain_silence(self, error: GenerationBlocked) -> GenerationBlocked:
+        """Distingue "todavía no llegó" de "no va a llegar nunca".
+
+        El 2026-08-19, con 18 de 20 imágenes ya generadas, las dos últimas
+        fallaron con `timeout esperando la imagen generada` y el mensaje mandaba
+        a buscar donde no era: se subió el timeout a 480s y se reintentó tres
+        veces, y era lo mismo. Lo que pasaba es que Gemini deja el cartel
+        «Creando tu imagen» puesto para siempre cuando se acabó la cuota de
+        imágenes —medido: sigue igual pasados 10 minutos, y un prompt trivial sin
+        referencia hace exactamente lo mismo, así que no es del prompt—. La cuota
+        agotada de IMÁGENES no dice nada; la de mensajes sí (ERROR_PATTERNS).
+
+        Un timeout con ese cartel todavía en pantalla, entonces, no es un
+        timeout: es la única forma que tiene el sitio de decir que no va a
+        contestar. Subir `--timeout` no arregla nada y el mensaje tiene que
+        decirlo, porque la reacción correcta es esperar y volver a correr —la
+        cola retoma sola por los PNG que ya están en `output/`.
+        """
+        try:
+            page = self._driver().page_source.lower()
+        except Exception:  # noqa: BLE001 — si ni la página se puede leer, va el error original
+            return error
+        marker = next((mark for mark in self.GENERATING_MARKERS if mark in page), None)
+        if marker is None:
+            return error
+        return GenerationBlocked(
+            f"{self.NAME} aceptó el pedido y se quedó en «{marker}» sin devolver imagen. "
+            "No es el timeout: así se ve la cuota de IMÁGENES agotada, que este sitio "
+            "no informa. Subir --timeout no cambia nada. Esperá a que se renueve y "
+            "volvé a correr el mismo comando: la cola retoma donde quedó."
         )
 
     def probe(self) -> dict:
@@ -557,7 +818,7 @@ class WebChatBrowser:
             "send_button": None if send is None else (
                 send.get_attribute("aria-label") or send.get_attribute("data-testid") or send.tag_name
             ),
-            "blocked": self.contains_error(driver.page_source),
+            "blocked": self.contains_error(self._visible_text()),
         }
 
     def _fingerprint(self, png_bytes: bytes) -> tuple:
@@ -602,23 +863,32 @@ class WebChatBrowser:
             ref_fp = self._ref_fp_cache[key]
 
         images = driver.find_elements("tag name", "img")
-        widths = sorted(
-            (int(i.get_attribute("naturalWidth") or 0) for i in images), reverse=True
-        )
-        # Diagnóstico: si la generada entra como preview chico, el filtro de 512
-        # la deja afuera y el único candidato es la referencia. Se imprime sólo
-        # cuando cambia, para no inundar el log en cada poll de `_wait_for`.
-        report = ",".join(str(width) for width in widths[:8] if width)
+
+        def size(image) -> tuple[int, int]:
+            try:
+                return (int(image.get_attribute("naturalWidth") or 0),
+                        int(image.get_attribute("naturalHeight") or 0))
+            except TRANSIENT_DOM_ERRORS:
+                return (0, 0)
+
+        sizes = sorted(((i, size(i)) for i in images),
+                       key=lambda pair: max(pair[1]), reverse=True)
+        # Diagnóstico: si la generada entra como preview chico, el filtro la deja
+        # afuera y el único candidato es la referencia. Se imprime sólo cuando
+        # cambia, para no inundar el log en cada poll de `_wait_for`.
+        #
+        # ⚠️ 2026-08-20: se reportan las DOS dimensiones. Antes iba sólo el ancho,
+        # y con eso el log de un roll-up decía "420" —que parece chico y parece la
+        # causa— cuando la imagen era 420x1008 y el problema era el filtro, no el
+        # tamaño. Un diagnóstico que muestra media medida manda a mirar al lugar
+        # equivocado.
+        report = ",".join(f"{w}x{h}" for _, (w, h) in sizes[:8] if w)
         if getattr(self, "_last_report", None) != report:
             self._last_report = report
-            print(f"  · imgs en pantalla (ancho natural): {report or 'ninguna'}",
+            print(f"  · imgs en pantalla (natural): {report or 'ninguna'}",
                   file=sys.stderr, flush=True)
 
-        candidates = sorted(
-            (i for i in images if int(i.get_attribute("naturalWidth") or 0) >= 512),
-            key=lambda i: int(i.get_attribute("naturalWidth")),
-            reverse=True,
-        )
+        candidates = [image for image, (w, h) in sizes if self.is_candidate_size(w, h)]
         for image in candidates:
             data_url = driver.execute_script(
                 """

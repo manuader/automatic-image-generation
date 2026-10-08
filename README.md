@@ -22,18 +22,26 @@ ilustraciones con el mismo estilo. Para una imagen suelta no vale la pena.
 python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-Y **un permiso de macOS que no es opcional**: Ajustes del Sistema → Privacidad y
-seguridad → Accesibilidad → habilitar la app desde la que corrés el script
-(Terminal, iTerm, tu IDE). Sin eso el script no puede mandar teclas y todas las
-imágenes fallan con el mismo error: `osascript is not allowed to send keystrokes
-(1002)`.
+Y nada más: **no hace falta ningún permiso de macOS**. Ojo con el intérprete, que
+es el error de arranque más común: las dependencias viven en el venv, así que el
+comando es `.venv/bin/python generate.py`, no `python3 generate.py`.
 
-Por qué hace falta: los chats web exigen input "trusted". Escribir por Selenium
-no habilita el botón de enviar, así que el prompt se tipea con teclas reales del
-sistema. Es también la razón por la que **el batch necesita la máquina para él**:
-si otra ventana se pone adelante, las teclas se las lleva ella. El script lo
-detecta, recupera el foco y sigue —y si no puede, aborta antes de teclear en la
-app ajena—, pero lo cómodo es arrancar la tanda y no tocar la compu.
+Por qué esto merece un párrafo: hasta el 2026-08-19 sí hacía falta un permiso, el
+de Accesibilidad, y era la mitad de los problemas de instalación. Los chats web
+exigen input "trusted", y de ahí se había concluido que el prompt tenía que
+tipearse con teclas reales del sistema (System Events), lo que además obligaba a
+darle **la máquina entera al batch**: si otra ventana se ponía adelante, las
+teclas se las llevaba ella. Resultó que la conclusión era más fuerte que el
+hecho. Lo que no funciona es `send_keys` de Selenium; `Input.insertText` del
+DevTools Protocol llega a la página con `isTrusted == true`, que es lo único que
+el sitio mira, y habilita el botón de enviar igual que un humano. Es el default
+desde entonces (`--typing cdp`) y por eso ahora se puede seguir usando la
+computadora mientras corre la tanda.
+
+El camino viejo sigue estando en `--typing keystroke`, y **ése sí** pide el
+permiso: Ajustes del Sistema → Privacidad y seguridad → Accesibilidad → habilitar
+la app desde la que corrés el script. Sin eso todas las imágenes fallan con
+`osascript is not allowed to send keystrokes (1002)`.
 
 ---
 
@@ -62,9 +70,9 @@ el §4). Uno por imagen, numerados, con la clave que va a tener el archivo.
 **5 · Corré**:
 
 ```bash
-python3 generate.py --engine gemini --launch          # una vez: abre el Chrome aislado y logueás
-python3 generate.py --project cafeteria --dry-run     # ¿qué va a generar?
-python3 generate.py --project cafeteria               # a laburar
+.venv/bin/python generate.py --engine gemini --launch          # una vez: abre el Chrome aislado y logueás
+.venv/bin/python generate.py --project cafeteria --dry-run     # ¿qué va a generar?
+.venv/bin/python generate.py --project cafeteria               # a laburar
 ```
 
 Las imágenes aparecen en `projects/cafeteria/output/<clave>.png`.
@@ -117,6 +125,7 @@ aparte, no confíes en git para eso.
 | `sizes` | lados a exportar en `game-asset`. Vacío = sólo el recorte, en resolución nativa. |
 | `punch_holes` | claves cuyo blanco encerrado SÍ es un hueco calado (ver §5). |
 | `reference_threshold` | ver §6, "cuando la referencia se parece demasiado". |
+| `typing` | `cdp` (default) o `keystroke`. Ver §1. `--typing` lo pisa. |
 
 ---
 
@@ -209,7 +218,7 @@ que sacar. Como el color no lo distingue de una camisa, se declara a mano:
 Para rehacer el recorte o cambiar los tamaños sin generar nada de nuevo:
 
 ```bash
-python3 generate.py --project cafeteria --reprocess
+.venv/bin/python generate.py --project cafeteria --reprocess
 ```
 
 ---
@@ -261,19 +270,20 @@ referencia, 25.8.
 ## 7. Todos los comandos
 
 ```bash
-python3 generate.py --engine gemini --launch      # abre el Chrome aislado del motor (logueate ahí)
-python3 generate.py --engine chat-gpt --probe     # ¿el motor reconoce la página? cuota: cero
-python3 generate.py --project X --dry-run         # la cola, sin generar
-python3 generate.py --project X                   # generar
-python3 generate.py --project X --only logo       # una sola
-python3 generate.py --project X --limit 5         # las cinco primeras
-python3 generate.py --project X --reprocess       # rehacer la salida, sin navegador
+.venv/bin/python generate.py --engine gemini --launch      # abre el Chrome aislado del motor (logueate ahí)
+.venv/bin/python generate.py --engine chat-gpt --probe     # ¿el motor reconoce la página? cuota: cero
+.venv/bin/python generate.py --project X --dry-run         # la cola, sin generar
+.venv/bin/python generate.py --project X                   # generar
+.venv/bin/python generate.py --project X --only logo       # una sola
+.venv/bin/python generate.py --project X --limit 5         # las cinco primeras
+.venv/bin/python generate.py --project X --reprocess       # rehacer la salida, sin navegador
 .venv/bin/python -m unittest discover -s tests -t tests   # los tests
 ```
 
-Las que se tocan cuando algo va mal: `--type-chunk` (bajalo si la máquina está
-cargada y se pierden caracteres), `--type-pause`, `--timeout`, `--retries`,
-`--ref-threshold`, `--max-consecutive-failures`.
+Las que se tocan cuando algo va mal: `--timeout`, `--retries`, `--ref-threshold`,
+`--max-consecutive-failures`, `--typing` (§1). Y sólo con `--typing keystroke`,
+que es el único modo que pasa por la cola de eventos de macOS: `--type-chunk`
+(bajalo si la máquina está cargada y se pierden caracteres) y `--type-pause`.
 
 ---
 
@@ -281,12 +291,16 @@ cargada y se pierden caracteres), `--type-pause`, `--timeout`, `--retries`,
 
 | Síntoma | Qué pasa |
 |---|---|
-| `osascript is not allowed to send keystrokes (1002)` | Falta el permiso de Accesibilidad (§1). |
+| `ModuleNotFoundError: No module named 'selenium'` | Corriste con `python3` en vez de `.venv/bin/python` (§1). |
+| `osascript is not allowed to send keystrokes (1002)` | Estás en `--typing keystroke` y falta el permiso de Accesibilidad. Con el default (`cdp`) este error no existe (§1). |
 | `no pude conectar Selenium al Chrome aislado` | No corriste `--launch`, o cerraste esa ventana. |
 | `timeout esperando el cuadro de prompt` | La sesión se cerró: logueate de nuevo en la ventana aislada. |
-| `no pude devolverle el foco a Chrome […] al frente está «X»` | La ventana X se quedó adelante. Cerrala o minimizala. |
-| `el editor no coincide con lo tipeado hasta acá` | El cursor se movió y la tanda se intercaló. **No se envió nada**: cuota intacta. Reintentá. |
-| `alcanzó su límite de uso` | Cuota agotada. El batch se frena solo tras 3 fallos seguidos. |
+| `el editor no tomó el foco` | La ventana aislada se cerró mientras corría la tanda. |
+| `timeout esperando la miniatura de la referencia adjunta` | El paste no pegó. Casi siempre es la ventana aislada cerrada o la pestaña en otra URL. |
+| `no pude devolverle el foco a Chrome […] al frente está «X»` | Sólo en `--typing keystroke`: la ventana X se quedó adelante. Cerrala o minimizala. |
+| `el editor no coincide con lo tipeado hasta acá` | Sólo en `--typing keystroke`: el cursor se movió y la tanda se intercaló. **No se envió nada**: cuota intacta. Reintentá. |
+| `alcanzó su límite de uso` | Cuota de **mensajes** agotada. El batch se frena solo tras 3 fallos seguidos. |
+| `se quedó en «creando tu imagen» sin devolver imagen` | Cuota de **imágenes** agotada, que Gemini no informa: deja el cartel puesto para siempre (medido: 10 min sin cambio, y con un prompt trivial sin referencia pasa igual). Subir `--timeout` no sirve. Esperá a que se renueve y volvé a correr el mismo comando. |
 | La cola sale vacía y no debería | Ya hay un PNG en `output/` con esa clave, o el `.md` dice `hecho`. |
 | `timeout esperando la imagen generada (distinta de la referencia)` | El filtro de huella se comió el resultado: bajá `reference_threshold` y mirá `state/discards/`. |
 
@@ -305,30 +319,35 @@ Cada motor abre **su** Chrome en **su** puerto, y no es un detalle: el launcher
 da por buena cualquier ventana que ya conteste en el puerto pedido, así que con
 un puerto compartido el segundo motor reusaría en silencio la sesión del primero.
 
-La mecánica que hace el trabajo pesado —el tipeo por tandas, la recuperación de
-foco, el paste de la referencia, la extracción por canvas, la huella de píxeles—
-vive en `core/webchat.py` y **no tiene nada de ningún proveedor adentro**. Un
-motor es un archivo de cuatro constantes: la URL, el selector del botón de
-enviar, la marca de la URL de conversación y las frases con las que ese sitio
-dice "no puedo".
+La mecánica que hace el trabajo pesado —el tipeo, el foco, el paste de la
+referencia, la extracción por canvas, la huella de píxeles— vive en
+`core/webchat.py` y **no tiene nada de ningún proveedor adentro**. Un motor es un
+archivo de cuatro constantes: la URL, el selector del botón de enviar, la marca
+de la URL de conversación y las frases con las que ese sitio dice "no puedo".
 
 De ChatGPT se comprobó contra la página lo más importante:
 
 - `chatgpt.com` carga sin redirigir y el cuadro de texto (`#prompt-textarea`, un
   ProseMirror) lo encuentra el selector genérico;
 - **`send_keys` de Selenium no aterriza en ese editor** — se tipeó "hola" y el
-  composer quedó vacío. Era la suposición grande y quedó confirmada: ChatGPT
-  necesita el mismo camino de teclas reales que Gemini, o sea que la mecánica
-  compartida es la correcta.
+  composer quedó vacío.
+
+⚠️ De ese segundo punto se había concluido que ChatGPT necesitaba teclas reales
+del sistema. La conclusión no se sostiene: el 2026-08-19 se midió contra Gemini
+que `Input.insertText` de CDP **sí** aterriza y **sí** habilita el botón de
+enviar (§1). O sea que lo que falla es `send_keys`, no todo lo que no sea una
+tecla de macOS, y lo primero que conviene probar en ChatGPT es el default `cdp`
+—no el camino de teclas— porque los dos editores son contenteditable y el
+mecanismo es el mismo.
 
 Lo que falta verificar es el botón de enviar, y por una razón concreta: con el
 composer vacío ese botón **no existe** (en su lugar está el de voz), así que
 revelarlo exige tipear de verdad. Cuesta un comando y cero cuota:
 
 ```bash
-python3 generate.py --engine chat-gpt --launch    # logueate en esa ventana
+.venv/bin/python generate.py --engine chat-gpt --launch    # logueate en esa ventana
 # escribí una palabra a mano en el composer, y entonces:
-python3 generate.py --engine chat-gpt --probe
+.venv/bin/python generate.py --engine chat-gpt --probe
 ```
 
 Si `send_button` sale `null` **con algo escrito**, lo que hay que corregir es una
@@ -351,17 +370,17 @@ es el ejemplo a copiar. Los tests de contrato lo agarran solo, sin tocar nada.
 core/         la parte genérica: no sabe qué modelo hay ni para qué son las imágenes
   queue.py        leer los .md, saber qué falta generar
   runner.py       generar → guardar → verificar → marcar hecho, en ese orden
-  webchat.py      toda la mecánica de manejar un chat web desde macOS
+  webchat.py      toda la mecánica de manejar un chat web (tipeo, foco, paste)
   cutout.py       el recorte de fondo por conectividad
   postprocess.py  los dos modos de salida
   project.py      dónde vive cada cosa de un proyecto
 gemini/       ┐ un archivo de constantes por proveedor
 chat-gpt/     ┘
 projects/     los objetivos: prompts, referencias y salida
-tests/        62 tests, ninguno necesita navegador
+tests/        68 tests, ninguno necesita navegador
 generate.py   el único comando
 ```
 
-Los 62 tests corren sin Chrome a propósito: una suite que necesitara navegador no se
+Los 68 tests corren sin Chrome a propósito: una suite que necesitara navegador no se
 correría nunca, y lo que hay que proteger —que el prompt llegue entero, que no se
 envíe uno barajado, que un error no voltee la tanda— se prueba sin él.

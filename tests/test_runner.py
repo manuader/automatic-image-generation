@@ -232,3 +232,42 @@ class OutputModeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WideFormatTests(unittest.TestCase):
+    """Una pieza apaisada es válida: el piso va sobre el lado LARGO.
+
+    El 2026-08-20 una portada de LinkedIn de 1024x254 —correcta, 314 KB, la pieza
+    que se había pedido— se rechazó con "no es un PNG válido del tamaño
+    esperado". El piso se medía sobre el lado corto, así que ningún banner 4:1 ni
+    ningún roll-up podía pasar jamás: el formato entero era imposible por
+    construcción. Estos tests fijan las dos mitades del criterio, porque aflojar
+    sólo una deja pasar la iconografía del sitio.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.addCleanup(self.temp.cleanup)
+
+    def _png(self, name, size):
+        path = self.root / name
+        Image.effect_noise(size, 100).convert("RGB").save(path)
+        return path
+
+    def test_a_wide_banner_is_accepted(self):
+        self.assertTrue(verify_png(self._png("banner.png", (1024, 254)), minimum_bytes=1))
+
+    def test_a_tall_rollup_is_accepted(self):
+        self.assertTrue(verify_png(self._png("rollup.png", (500, 1200)), minimum_bytes=1))
+
+    def test_the_sites_own_icons_are_still_rejected(self):
+        # Los tamaños medidos en la página de Gemini, que compiten como
+        # candidatos con la imagen generada.
+        for side in (150, 128, 64, 32):
+            path = self._png(f"ui{side}.png", (side, side))
+            self.assertFalse(verify_png(path, minimum_bytes=1), f"pasó un {side}x{side}")
+
+    def test_a_degenerate_strip_is_rejected(self):
+        # Larga pero de 20 px de alto: no es una imagen, es una franja.
+        self.assertFalse(verify_png(self._png("strip.png", (1024, 20)), minimum_bytes=1))
