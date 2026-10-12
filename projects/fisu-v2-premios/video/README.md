@@ -18,3 +18,5 @@ encima, C4). Por eso el cofre abre a un brillo vacío y la Ruleta trae el disco 
 | cofre_abre | ui_chest_closed | verde | 3 s | no | 3.er toque: abre; el premio aparece encima |
 | ruleta_espera | wheel_frame + wheel_pointer | blanco | 4 s | sí | la Ruleta quieta, luces que corren |
 | ruleta_premio | wheel_frame + wheel_pointer | verde | 2 s | no | al caer en el gajo: festejo del marco |
+| paquete_espera / _sacude / _abre | pickup_package | blanco / blanco / verde | 4 / 1 / 3 s | sí / no / no | la caja de la Aduana (C27) |
+| colchon_espera / _sacude / _abre | pickup_mattress | blanco / blanco / verde | 4 / 1 / 3 s | sí / no / no | el Colchón (C27) |
