@@ -18,9 +18,9 @@
   },
   "_creditos": {
     "antes": 303.98,
-    "despues": 204.98,
-    "gastados": 99.0,
-    "detalle": "94,5 en la tanda de 11 + 4,5 en colchon_abre v2"
+    "despues": 195.98,
+    "gastados": 108.0,
+    "detalle": "94,5 tanda de 11 + 4,5 colchon_abre v2 + 9 colchon_abre v3 (2 intentos)"
   },
   "cofre_espera": {
     "job_id": "33fbe67e-40f3-43f6-bd9a-b12f6b5fa410",
@@ -101,12 +101,21 @@
     "cambios_al_prompt": "3 s + 'first second'; se sacó 'a couple of springs boing', se agregó 'no springs, legs or anything appear under or around it'"
   },
   "colchon_abre": {
-    "job_id": "9acbf452-c932-4901-8a63-e17b57579121",
-    "version": 2,
+    "job_id": "e58fdec4-ff43-4573-a342-1565c8443873",
+    "version": 3,
     "duration": 3,
-    "start_image": "mattress_green",
+    "start_image": "mattress_white",
+    "fondo": "blanco",
     "intento": 1,
-    "prompt": "colchon_abre.md v2 (commit f5dc9c7), tal cual: explosión de billetes beige/naranja/rosados/celestes y monedas doradas",
+    "prompt": "colchon_abre.md v3 (commit 6462d89), tal cual: billetes VERDES y monedas doradas sobre fondo blanco",
+    "descartados": [
+      "25cbebd1-d4d6-448c-b344-bf907adad50a (intento 2: prompt + 'all money and rays stay inside the frame with a white margin', 'fixed tripod', 'no shadow under the mattress'; igual cruzó el borde, billetes más chicos y borroneados, pelitos en el colchón: peor que el 1)"
+    ],
+    "v2": {
+      "job_id": "9acbf452-c932-4901-8a63-e17b57579121",
+      "archivo": "colchon_abre.v2.mp4",
+      "motivo": "el dueño quiere los billetes verdes sí o sí; pasa a fondo blanco"
+    },
     "v1": {
       "job_id": "1fd64538-69de-4821-848b-5754c57aed98",
       "archivo": "colchon_abre.v1.mp4",
