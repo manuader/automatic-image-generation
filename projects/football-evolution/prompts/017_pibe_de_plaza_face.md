@@ -1,7 +1,7 @@
 # 017 — Pibe de Plaza, cara (avatar)
 
 - **archivo**: `pibe_de_plaza_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_de_plaza
 - **destino en el juego**: ui.atlas/pibe_de_plaza_face

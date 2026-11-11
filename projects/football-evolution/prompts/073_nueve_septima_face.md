@@ -1,7 +1,7 @@
 # 073 — Nueve de Septima, cara (avatar)
 
 - **archivo**: `nueve_septima_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_septima
 - **destino en el juego**: ui.atlas/nueve_septima_face

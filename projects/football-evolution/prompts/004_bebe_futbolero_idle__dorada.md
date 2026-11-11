@@ -1,7 +1,7 @@
 # 004 — Bebe Futbolero, skin Dorada
 
 - **archivo**: `bebe_futbolero_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: bebe_futbolero
 - **destino en el juego**: fam_dorada.atlas/bebe_futbolero_idle__dorada (@2x 384, @3x 512)

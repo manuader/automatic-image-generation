@@ -1,7 +1,7 @@
 # 101 — Pibe de Cuarta, skin Barro de Potrero
 
 - **archivo**: `pibe_cuarta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_cuarta
 - **destino en el juego**: fam_barro.atlas/pibe_cuarta_idle__barro (@2x 384, @3x 512)

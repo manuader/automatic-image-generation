@@ -1,7 +1,7 @@
 # 114 — Titular del Ascenso (nivel 17)
 
 - **archivo**: `titular_ascenso_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: titular_ascenso
 - **destino en el juego**: earth.atlas/titular_ascenso_idle (@2x 384, @3x 512)

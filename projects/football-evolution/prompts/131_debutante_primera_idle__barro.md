@@ -1,7 +1,7 @@
 # 131 — Debutante de Primera, skin Barro de Potrero
 
 - **archivo**: `debutante_primera_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_primera
 - **destino en el juego**: fam_barro.atlas/debutante_primera_idle__barro (@2x 384, @3x 512)

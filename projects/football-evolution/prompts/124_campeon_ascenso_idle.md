@@ -1,7 +1,7 @@
 # 124 — Campeon del Ascenso (nivel 19)
 
 - **archivo**: `campeon_ascenso_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: campeon_ascenso
 - **destino en el juego**: earth.atlas/campeon_ascenso_idle (@2x 384, @3x 512)

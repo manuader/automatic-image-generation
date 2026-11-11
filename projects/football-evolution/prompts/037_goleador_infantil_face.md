@@ -1,7 +1,7 @@
 # 037 — Goleador Infantil, cara (avatar)
 
 - **archivo**: `goleador_infantil_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: goleador_infantil
 - **destino en el juego**: ui.atlas/goleador_infantil_face

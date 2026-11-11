@@ -1,7 +1,7 @@
 # 032 — Infantil, cara (avatar)
 
 - **archivo**: `infantil_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: infantil
 - **destino en el juego**: ui.atlas/infantil_face

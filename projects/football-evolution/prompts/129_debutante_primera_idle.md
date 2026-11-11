@@ -1,7 +1,7 @@
 # 129 — Debutante de Primera (nivel 20)
 
 - **archivo**: `debutante_primera_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_primera
 - **destino en el juego**: earth.atlas/debutante_primera_idle (@2x 384, @3x 512)

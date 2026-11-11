@@ -1,7 +1,7 @@
 # 062 — Central de Septima, skin Dorada
 
 - **archivo**: `central_septima_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_septima
 - **destino en el juego**: fam_dorada.atlas/central_septima_idle__dorada (@2x 384, @3x 512)

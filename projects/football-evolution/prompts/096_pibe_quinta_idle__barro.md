@@ -1,7 +1,7 @@
 # 096 — Pibe de Quinta, skin Barro de Potrero
 
 - **archivo**: `pibe_quinta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_quinta
 - **destino en el juego**: fam_barro.atlas/pibe_quinta_idle__barro (@2x 384, @3x 512)

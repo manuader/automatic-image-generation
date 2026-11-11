@@ -1,7 +1,7 @@
 # 104 — Jugador de Reserva (nivel 15)
 
 - **archivo**: `jugador_reserva_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: jugador_reserva
 - **destino en el juego**: earth.atlas/jugador_reserva_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 099 — Pibe de Cuarta (nivel 14)
 
 - **archivo**: `pibe_cuarta_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_cuarta
 - **destino en el juego**: earth.atlas/pibe_cuarta_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 050 — Pibe de Octava, skin Barro de Potrero
 
 - **archivo**: `pibe_octava_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_octava
 - **destino en el juego**: fam_barro.atlas/pibe_octava_idle__barro (@2x 384, @3x 512)

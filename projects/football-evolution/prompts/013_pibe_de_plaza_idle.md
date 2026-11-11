@@ -1,7 +1,7 @@
 # 013 — Pibe de Plaza (nivel 3)
 
 - **archivo**: `pibe_de_plaza_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_de_plaza
 - **destino en el juego**: earth.atlas/pibe_de_plaza_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 088 — Volante de Sexta, cara (avatar)
 
 - **archivo**: `volante_sexta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: volante_sexta
 - **destino en el juego**: ui.atlas/volante_sexta_face

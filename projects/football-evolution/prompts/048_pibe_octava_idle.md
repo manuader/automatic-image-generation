@@ -1,7 +1,7 @@
 # 048 — Pibe de Octava (nivel 10)
 
 - **archivo**: `pibe_octava_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_octava
 - **destino en el juego**: earth.atlas/pibe_octava_idle (@2x 384, @3x 512)

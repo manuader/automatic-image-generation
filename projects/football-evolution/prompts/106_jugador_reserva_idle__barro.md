@@ -1,7 +1,7 @@
 # 106 — Jugador de Reserva, skin Barro de Potrero
 
 - **archivo**: `jugador_reserva_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: jugador_reserva
 - **destino en el juego**: fam_barro.atlas/jugador_reserva_idle__barro (@2x 384, @3x 512)

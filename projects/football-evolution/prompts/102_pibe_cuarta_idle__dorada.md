@@ -1,7 +1,7 @@
 # 102 — Pibe de Cuarta, skin Dorada
 
 - **archivo**: `pibe_cuarta_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_cuarta
 - **destino en el juego**: fam_dorada.atlas/pibe_cuarta_idle__dorada (@2x 384, @3x 512)

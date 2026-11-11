@@ -1,7 +1,7 @@
 # 022 — Rey del Potrero, cara (avatar)
 
 - **archivo**: `rey_del_potrero_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: rey_del_potrero
 - **destino en el juego**: ui.atlas/rey_del_potrero_face

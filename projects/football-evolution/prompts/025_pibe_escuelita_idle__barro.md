@@ -1,7 +1,7 @@
 # 025 — Pibe de Escuelita, skin Barro de Potrero
 
 - **archivo**: `pibe_escuelita_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_escuelita
 - **destino en el juego**: fam_barro.atlas/pibe_escuelita_idle__barro (@2x 384, @3x 512)

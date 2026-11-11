@@ -1,7 +1,7 @@
 # 012 — Primeras Patadas, cara (avatar)
 
 - **archivo**: `primeras_patadas_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: primeras_patadas
 - **destino en el juego**: ui.atlas/primeras_patadas_face

@@ -1,7 +1,7 @@
 # 107 — Jugador de Reserva, skin Dorada
 
 - **archivo**: `jugador_reserva_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: jugador_reserva
 - **destino en el juego**: fam_dorada.atlas/jugador_reserva_idle__dorada (@2x 384, @3x 512)

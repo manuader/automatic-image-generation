@@ -1,7 +1,7 @@
 # 094 — Pibe de Quinta (nivel 13)
 
 - **archivo**: `pibe_quinta_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_quinta
 - **destino en el juego**: earth.atlas/pibe_quinta_idle (@2x 384, @3x 512)

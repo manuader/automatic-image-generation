@@ -1,7 +1,7 @@
 # 064 — Volante de Septima (nivel 11)
 
 - **archivo**: `volante_septima_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: volante_septima
 - **destino en el juego**: earth.atlas/volante_septima_idle (@2x 384, @3x 512)

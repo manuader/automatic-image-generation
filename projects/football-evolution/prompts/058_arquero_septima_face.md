@@ -1,7 +1,7 @@
 # 058 — Arquero de Septima, cara (avatar)
 
 - **archivo**: `arquero_septima_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_septima
 - **destino en el juego**: ui.atlas/arquero_septima_face

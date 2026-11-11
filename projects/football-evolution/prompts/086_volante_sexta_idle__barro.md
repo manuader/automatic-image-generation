@@ -1,7 +1,7 @@
 # 086 — Volante de Sexta, skin Barro de Potrero
 
 - **archivo**: `volante_sexta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: volante_sexta
 - **destino en el juego**: fam_barro.atlas/volante_sexta_idle__barro (@2x 384, @3x 512)

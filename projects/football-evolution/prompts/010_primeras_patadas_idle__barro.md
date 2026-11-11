@@ -1,7 +1,7 @@
 # 010 — Primeras Patadas, skin Barro de Potrero
 
 - **archivo**: `primeras_patadas_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: primeras_patadas
 - **destino en el juego**: fam_barro.atlas/primeras_patadas_idle__barro (@2x 384, @3x 512)

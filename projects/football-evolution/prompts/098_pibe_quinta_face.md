@@ -1,7 +1,7 @@
 # 098 — Pibe de Quinta, cara (avatar)
 
 - **archivo**: `pibe_quinta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_quinta
 - **destino en el juego**: ui.atlas/pibe_quinta_face

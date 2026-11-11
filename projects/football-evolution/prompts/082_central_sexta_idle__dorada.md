@@ -1,7 +1,7 @@
 # 082 — Central de Sexta, skin Dorada
 
 - **archivo**: `central_sexta_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_sexta
 - **destino en el juego**: fam_dorada.atlas/central_sexta_idle__dorada (@2x 384, @3x 512)

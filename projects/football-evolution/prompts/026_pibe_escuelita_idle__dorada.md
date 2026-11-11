@@ -1,7 +1,7 @@
 # 026 — Pibe de Escuelita, skin Dorada
 
 - **archivo**: `pibe_escuelita_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_escuelita
 - **destino en el juego**: fam_dorada.atlas/pibe_escuelita_idle__dorada (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 055 — Arquero de Septima, skin Barro de Potrero
 
 - **archivo**: `arquero_septima_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_septima
 - **destino en el juego**: fam_barro.atlas/arquero_septima_idle__barro (@2x 384, @3x 512)

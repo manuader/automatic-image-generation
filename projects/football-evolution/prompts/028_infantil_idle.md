@@ -1,7 +1,7 @@
 # 028 — Infantil (nivel 6)
 
 - **archivo**: `infantil_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: infantil
 - **destino en el juego**: earth.atlas/infantil_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 038 — Promesa del Barrio (nivel 8)
 
 - **archivo**: `promesa_barrio_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: promesa_barrio
 - **destino en el juego**: earth.atlas/promesa_barrio_idle (@2x 384, @3x 512)

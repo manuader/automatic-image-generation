@@ -1,7 +1,7 @@
 # 091 — Nueve de Sexta, skin Barro de Potrero
 
 - **archivo**: `nueve_sexta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_sexta
 - **destino en el juego**: fam_barro.atlas/nueve_sexta_idle__barro (@2x 384, @3x 512)

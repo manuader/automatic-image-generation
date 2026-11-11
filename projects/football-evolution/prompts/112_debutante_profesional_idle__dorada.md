@@ -1,7 +1,7 @@
 # 112 — Debutante Profesional, skin Dorada
 
 - **archivo**: `debutante_profesional_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_profesional
 - **destino en el juego**: fam_dorada.atlas/debutante_profesional_idle__dorada (@2x 384, @3x 512)

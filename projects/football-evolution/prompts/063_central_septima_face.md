@@ -1,7 +1,7 @@
 # 063 — Central de Septima, cara (avatar)
 
 - **archivo**: `central_septima_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_septima
 - **destino en el juego**: ui.atlas/central_septima_face

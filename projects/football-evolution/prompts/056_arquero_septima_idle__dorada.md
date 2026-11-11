@@ -1,7 +1,7 @@
 # 056 — Arquero de Septima, skin Dorada
 
 - **archivo**: `arquero_septima_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_septima
 - **destino en el juego**: fam_dorada.atlas/arquero_septima_idle__dorada (@2x 384, @3x 512)

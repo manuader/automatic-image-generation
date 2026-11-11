@@ -1,7 +1,7 @@
 # 007 — Bebe Futbolero, cara (avatar)
 
 - **archivo**: `bebe_futbolero_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: bebe_futbolero
 - **destino en el juego**: ui.atlas/bebe_futbolero_face

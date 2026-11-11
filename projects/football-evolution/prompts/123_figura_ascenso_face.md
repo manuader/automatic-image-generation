@@ -1,7 +1,7 @@
 # 123 — Figura del Ascenso, cara (avatar)
 
 - **archivo**: `figura_ascenso_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: figura_ascenso
 - **destino en el juego**: ui.atlas/figura_ascenso_face

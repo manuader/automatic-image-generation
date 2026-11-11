@@ -1,7 +1,7 @@
 # 008 — Primeras Patadas (nivel 2)
 
 - **archivo**: `primeras_patadas_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: primeras_patadas
 - **destino en el juego**: earth.atlas/primeras_patadas_idle (@2x 384, @3x 512)

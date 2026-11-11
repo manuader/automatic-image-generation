@@ -1,7 +1,7 @@
 # 045 — Pibe de Novena, skin Barro de Potrero
 
 - **archivo**: `pibe_novena_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_novena
 - **destino en el juego**: fam_barro.atlas/pibe_novena_idle__barro (@2x 384, @3x 512)

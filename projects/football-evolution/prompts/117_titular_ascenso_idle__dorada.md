@@ -1,7 +1,7 @@
 # 117 — Titular del Ascenso, skin Dorada
 
 - **archivo**: `titular_ascenso_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: titular_ascenso
 - **destino en el juego**: fam_dorada.atlas/titular_ascenso_idle__dorada (@2x 384, @3x 512)

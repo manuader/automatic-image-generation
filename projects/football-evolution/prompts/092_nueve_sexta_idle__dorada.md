@@ -1,7 +1,7 @@
 # 092 — Nueve de Sexta, skin Dorada
 
 - **archivo**: `nueve_sexta_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_sexta
 - **destino en el juego**: fam_dorada.atlas/nueve_sexta_idle__dorada (@2x 384, @3x 512)

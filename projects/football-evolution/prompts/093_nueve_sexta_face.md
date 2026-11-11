@@ -1,7 +1,7 @@
 # 093 — Nueve de Sexta, cara (avatar)
 
 - **archivo**: `nueve_sexta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_sexta
 - **destino en el juego**: ui.atlas/nueve_sexta_face

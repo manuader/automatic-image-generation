@@ -1,7 +1,7 @@
 # 079 — Central de Sexta (nivel 12)
 
 - **archivo**: `central_sexta_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_sexta
 - **destino en el juego**: earth.atlas/central_sexta_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 113 — Debutante Profesional, cara (avatar)
 
 - **archivo**: `debutante_profesional_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_profesional
 - **destino en el juego**: ui.atlas/debutante_profesional_face

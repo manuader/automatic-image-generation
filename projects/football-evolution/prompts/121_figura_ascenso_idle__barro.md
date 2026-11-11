@@ -1,7 +1,7 @@
 # 121 — Figura del Ascenso, skin Barro de Potrero
 
 - **archivo**: `figura_ascenso_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: figura_ascenso
 - **destino en el juego**: fam_barro.atlas/figura_ascenso_idle__barro (@2x 384, @3x 512)

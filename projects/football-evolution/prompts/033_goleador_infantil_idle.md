@@ -1,7 +1,7 @@
 # 033 — Goleador Infantil (nivel 7)
 
 - **archivo**: `goleador_infantil_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: goleador_infantil
 - **destino en el juego**: earth.atlas/goleador_infantil_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 074 — Arquero de Sexta (nivel 12)
 
 - **archivo**: `arquero_sexta_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_sexta
 - **destino en el juego**: earth.atlas/arquero_sexta_idle (@2x 384, @3x 512)

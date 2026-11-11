@@ -1,7 +1,7 @@
 # 127 — Campeon del Ascenso, skin Dorada
 
 - **archivo**: `campeon_ascenso_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: campeon_ascenso
 - **destino en el juego**: fam_dorada.atlas/campeon_ascenso_idle__dorada (@2x 384, @3x 512)

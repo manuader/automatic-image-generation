@@ -1,7 +1,7 @@
 # 109 — Debutante Profesional (nivel 16)
 
 - **archivo**: `debutante_profesional_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_profesional
 - **destino en el juego**: earth.atlas/debutante_profesional_idle (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 041 — Promesa del Barrio, skin Dorada
 
 - **archivo**: `promesa_barrio_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: promesa_barrio
 - **destino en el juego**: fam_dorada.atlas/promesa_barrio_idle__dorada (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 052 — Pibe de Octava, cara (avatar)
 
 - **archivo**: `pibe_octava_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_octava
 - **destino en el juego**: ui.atlas/pibe_octava_face

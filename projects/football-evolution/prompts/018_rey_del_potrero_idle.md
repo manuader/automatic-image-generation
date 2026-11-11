@@ -1,7 +1,7 @@
 # 018 — Rey del Potrero (nivel 4)
 
 - **archivo**: `rey_del_potrero_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: rey_del_potrero
 - **destino en el juego**: earth.atlas/rey_del_potrero_idle (@2x 384, @3x 512)

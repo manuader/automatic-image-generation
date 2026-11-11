@@ -1,7 +1,7 @@
 # 057 — Arquero de Septima, skin Buzo Fluor
 
 - **archivo**: `arquero_septima_idle__buzo_fluor.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_septima
 - **destino en el juego**: earth.atlas/arquero_septima_idle__buzo_fluor (@2x 384, @3x 512)

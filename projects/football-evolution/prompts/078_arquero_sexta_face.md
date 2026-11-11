@@ -1,7 +1,7 @@
 # 078 — Arquero de Sexta, cara (avatar)
 
 - **archivo**: `arquero_sexta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_sexta
 - **destino en el juego**: ui.atlas/arquero_sexta_face

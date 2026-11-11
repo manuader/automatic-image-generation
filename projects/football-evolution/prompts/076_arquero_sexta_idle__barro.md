@@ -1,7 +1,7 @@
 # 076 — Arquero de Sexta, skin Barro de Potrero
 
 - **archivo**: `arquero_sexta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: arquero_sexta
 - **destino en el juego**: fam_barro.atlas/arquero_sexta_idle__barro (@2x 384, @3x 512)

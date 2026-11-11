@@ -1,7 +1,7 @@
 # 061 — Central de Septima, skin Barro de Potrero
 
 - **archivo**: `central_septima_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_septima
 - **destino en el juego**: fam_barro.atlas/central_septima_idle__barro (@2x 384, @3x 512)

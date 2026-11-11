@@ -1,7 +1,7 @@
 # 042 — Promesa del Barrio, cara (avatar)
 
 - **archivo**: `promesa_barrio_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: promesa_barrio
 - **destino en el juego**: ui.atlas/promesa_barrio_face

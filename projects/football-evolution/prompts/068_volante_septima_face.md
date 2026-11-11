@@ -1,7 +1,7 @@
 # 068 — Volante de Septima, cara (avatar)
 
 - **archivo**: `volante_septima_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: volante_septima
 - **destino en el juego**: ui.atlas/volante_septima_face

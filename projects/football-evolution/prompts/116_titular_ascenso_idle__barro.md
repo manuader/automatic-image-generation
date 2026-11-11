@@ -1,7 +1,7 @@
 # 116 — Titular del Ascenso, skin Barro de Potrero
 
 - **archivo**: `titular_ascenso_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: titular_ascenso
 - **destino en el juego**: fam_barro.atlas/titular_ascenso_idle__barro (@2x 384, @3x 512)

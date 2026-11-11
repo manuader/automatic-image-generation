@@ -1,7 +1,7 @@
 # 071 — Nueve de Septima, skin Barro de Potrero
 
 - **archivo**: `nueve_septima_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_septima
 - **destino en el juego**: fam_barro.atlas/nueve_septima_idle__barro (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 005 — Bebe Futbolero, skin La Primera Camiseta
 
 - **archivo**: `bebe_futbolero_idle__primera_camiseta.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: bebe_futbolero
 - **destino en el juego**: earth.atlas/bebe_futbolero_idle__primera_camiseta (@2x 384, @3x 512)

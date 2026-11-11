@@ -1,7 +1,7 @@
 # 023 — Pibe de Escuelita (nivel 5)
 
 - **archivo**: `pibe_escuelita_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_escuelita
 - **destino en el juego**: earth.atlas/pibe_escuelita_idle (@2x 384, @3x 512)

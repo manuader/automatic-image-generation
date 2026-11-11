@@ -1,7 +1,7 @@
 # 118 — Titular del Ascenso, cara (avatar)
 
 - **archivo**: `titular_ascenso_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: titular_ascenso
 - **destino en el juego**: ui.atlas/titular_ascenso_face

@@ -1,7 +1,7 @@
 # 083 — Central de Sexta, cara (avatar)
 
 - **archivo**: `central_sexta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_sexta
 - **destino en el juego**: ui.atlas/central_sexta_face

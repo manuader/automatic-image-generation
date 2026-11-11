@@ -1,7 +1,7 @@
 # 047 — Pibe de Novena, cara (avatar)
 
 - **archivo**: `pibe_novena_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_novena
 - **destino en el juego**: ui.atlas/pibe_novena_face

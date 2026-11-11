@@ -1,7 +1,7 @@
 # 122 — Figura del Ascenso, skin Dorada
 
 - **archivo**: `figura_ascenso_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: figura_ascenso
 - **destino en el juego**: fam_dorada.atlas/figura_ascenso_idle__dorada (@2x 384, @3x 512)

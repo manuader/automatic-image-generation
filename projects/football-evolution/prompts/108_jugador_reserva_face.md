@@ -1,7 +1,7 @@
 # 108 — Jugador de Reserva, cara (avatar)
 
 - **archivo**: `jugador_reserva_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: jugador_reserva
 - **destino en el juego**: ui.atlas/jugador_reserva_face

@@ -1,7 +1,7 @@
 # 003 — Bebe Futbolero, skin Barro de Potrero
 
 - **archivo**: `bebe_futbolero_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: bebe_futbolero
 - **destino en el juego**: fam_barro.atlas/bebe_futbolero_idle__barro (@2x 384, @3x 512)

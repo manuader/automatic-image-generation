@@ -1,7 +1,7 @@
 # 119 — Figura del Ascenso (nivel 18)
 
 - **archivo**: `figura_ascenso_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: figura_ascenso
 - **destino en el juego**: earth.atlas/figura_ascenso_idle (@2x 384, @3x 512)

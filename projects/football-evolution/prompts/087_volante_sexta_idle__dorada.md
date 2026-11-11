@@ -1,7 +1,7 @@
 # 087 — Volante de Sexta, skin Dorada
 
 - **archivo**: `volante_sexta_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: volante_sexta
 - **destino en el juego**: fam_dorada.atlas/volante_sexta_idle__dorada (@2x 384, @3x 512)

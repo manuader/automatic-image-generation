@@ -1,7 +1,7 @@
 # 043 — Pibe de Novena (nivel 9)
 
 - **archivo**: `pibe_novena_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_novena
 - **destino en el juego**: earth.atlas/pibe_novena_idle (@2x 384, @3x 512)

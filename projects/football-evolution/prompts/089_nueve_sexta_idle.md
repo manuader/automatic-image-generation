@@ -1,7 +1,7 @@
 # 089 — Nueve de Sexta (nivel 12)
 
 - **archivo**: `nueve_sexta_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_sexta
 - **destino en el juego**: earth.atlas/nueve_sexta_idle (@2x 384, @3x 512)

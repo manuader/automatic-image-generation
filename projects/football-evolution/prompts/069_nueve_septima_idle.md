@@ -1,7 +1,7 @@
 # 069 — Nueve de Septima (nivel 11)
 
 - **archivo**: `nueve_septima_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: nueve_septima
 - **destino en el juego**: earth.atlas/nueve_septima_idle (@2x 384, @3x 512)

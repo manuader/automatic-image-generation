@@ -1,7 +1,7 @@
 # 133 — Debutante de Primera, cara (avatar)
 
 - **archivo**: `debutante_primera_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_primera
 - **destino en el juego**: ui.atlas/debutante_primera_face

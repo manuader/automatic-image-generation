@@ -1,7 +1,7 @@
 # 111 — Debutante Profesional, skin Barro de Potrero
 
 - **archivo**: `debutante_profesional_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: debutante_profesional
 - **destino en el juego**: fam_barro.atlas/debutante_profesional_idle__barro (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 030 — Infantil, skin Barro de Potrero
 
 - **archivo**: `infantil_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: infantil
 - **destino en el juego**: fam_barro.atlas/infantil_idle__barro (@2x 384, @3x 512)

@@ -1,7 +1,7 @@
 # 020 — Rey del Potrero, skin Barro de Potrero
 
 - **archivo**: `rey_del_potrero_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: rey_del_potrero
 - **destino en el juego**: fam_barro.atlas/rey_del_potrero_idle__barro (@2x 384, @3x 512)

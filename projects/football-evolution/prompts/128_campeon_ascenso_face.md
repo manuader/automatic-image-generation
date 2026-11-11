@@ -1,7 +1,7 @@
 # 128 — Campeon del Ascenso, cara (avatar)
 
 - **archivo**: `campeon_ascenso_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: campeon_ascenso
 - **destino en el juego**: ui.atlas/campeon_ascenso_face

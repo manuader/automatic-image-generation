@@ -1,7 +1,7 @@
 # 046 — Pibe de Novena, skin Dorada
 
 - **archivo**: `pibe_novena_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_novena
 - **destino en el juego**: fam_dorada.atlas/pibe_novena_idle__dorada (@2x 384, @3x 512)

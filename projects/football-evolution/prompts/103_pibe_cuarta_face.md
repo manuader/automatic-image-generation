@@ -1,7 +1,7 @@
 # 103 — Pibe de Cuarta, cara (avatar)
 
 - **archivo**: `pibe_cuarta_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_cuarta
 - **destino en el juego**: ui.atlas/pibe_cuarta_face

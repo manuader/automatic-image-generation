@@ -1,7 +1,7 @@
 # 081 — Central de Sexta, skin Barro de Potrero
 
 - **archivo**: `central_sexta_idle__barro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_sexta
 - **destino en el juego**: fam_barro.atlas/central_sexta_idle__barro (@2x 384, @3x 512)

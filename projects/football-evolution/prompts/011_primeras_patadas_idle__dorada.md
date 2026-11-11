@@ -1,7 +1,7 @@
 # 011 — Primeras Patadas, skin Dorada
 
 - **archivo**: `primeras_patadas_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: primeras_patadas
 - **destino en el juego**: fam_dorada.atlas/primeras_patadas_idle__dorada (@2x 384, @3x 512)

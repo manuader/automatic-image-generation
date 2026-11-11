@@ -1,7 +1,7 @@
 # 036 — Goleador Infantil, skin Dorada
 
 - **archivo**: `goleador_infantil_idle__dorada.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: goleador_infantil
 - **destino en el juego**: fam_dorada.atlas/goleador_infantil_idle__dorada (@2x 384, @3x 512)

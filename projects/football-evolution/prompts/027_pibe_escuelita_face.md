@@ -1,7 +1,7 @@
 # 027 — Pibe de Escuelita, cara (avatar)
 
 - **archivo**: `pibe_escuelita_face.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: pibe_escuelita
 - **destino en el juego**: ui.atlas/pibe_escuelita_face

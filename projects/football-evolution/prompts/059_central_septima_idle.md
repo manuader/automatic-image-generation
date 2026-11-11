@@ -1,7 +1,7 @@
 # 059 — Central de Septima (nivel 11)
 
 - **archivo**: `central_septima_idle.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: central_septima
 - **destino en el juego**: earth.atlas/central_septima_idle (@2x 384, @3x 512)
