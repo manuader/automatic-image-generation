@@ -98,6 +98,22 @@ class EngineProfileTests(unittest.TestCase):
                     self.assertEqual(browser.contains_error(f"<p>{phrase}</p>"), reason)
 
 
+class GeminiImageLimitTests(unittest.TestCase):
+    def test_el_cartel_de_limite_con_hora_de_reinicio_es_cuota(self):
+        """Así respondió Gemini el 2026-11-11 con la cuota de imágenes agotada."""
+        from supervisor import QUOTA, classify
+
+        browser = engines.load("gemini")
+        texto = "Gemini dijo\nSe alcanzó el límite. Se restablece a la(s) 6:25 p.m.\nVer uso"
+        motivo = browser.contains_error(texto)
+        self.assertEqual(motivo, "Gemini alcanzó su límite de uso")
+        self.assertEqual(classify(motivo), QUOTA)
+
+    def test_el_aviso_preventivo_sigue_sin_ser_bloqueo(self):
+        browser = engines.load("gemini")
+        self.assertIsNone(browser.contains_error("Estás por alcanzar el límite de uso"))
+
+
 class ChromeLauncherTests(unittest.TestCase):
     def test_the_launcher_uses_the_debug_port_and_a_profile_per_engine(self):
         with tempfile.TemporaryDirectory() as tmp:

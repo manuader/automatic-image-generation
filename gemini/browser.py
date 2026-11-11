@@ -33,6 +33,12 @@ class Browser(WebChatBrowser):
         "captcha": "Gemini mostró un CAPTCHA",
         "límite de uso": "Gemini alcanzó su límite de uso",
         "llegaste a tu límite": "Gemini alcanzó su límite de uso",
+        # 2026-11-11: con la cuota de imágenes agotada, la respuesta dice
+        # «Se alcanzó el límite · Se restablece a la(s) 6:25 p.m.». Sin esto el
+        # supervisor lo tomaba como timeout de la imagen y quemaba sus 3 intentos.
+        "se alcanzó el límite": "Gemini alcanzó su límite de uso",
+        "se alcanzo el limite": "Gemini alcanzó su límite de uso",
+        "limit reached": "Gemini alcanzó su límite de uso",
         "try again later": "Gemini pidió reintentar más tarde",
         "something went wrong": "Gemini devolvió un error",
         "no se pudo generar": "Gemini no pudo generar la imagen",
