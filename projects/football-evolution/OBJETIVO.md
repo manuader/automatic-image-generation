@@ -111,7 +111,7 @@ regla de recorte.
 | 1 | lo más simple del piso |
 | 2 | un paso más seguro, todavía simple |
 | 3 | más pulido, una luz de borde cálida suave sobre los bordes de la figura |
-| 4 | pose heroica, su mejor ropa y equipo, materiales más ricos y brillantes, una luz de borde dorada fuerte sobre la figura; **parado solo, sin nada bajo los pies ni detrás** |
+| 4 | pose heroica y triunfal, un poco más alto y con más detalle que los otros tres; su mejor ropa en tela satinada con vivos y costuras doradas; **en alto, en una mano, el premio del piso** (ver abajo); materiales más ricos y una luz de borde dorada fuerte sobre la figura; **parado solo, sin nada bajo los pies ni detrás** |
 
 En el piso 3 el cuarto es el nivel 12 (los cuatro de Sexta). El tema de cada piso vive **sólo en el fondo** (`bg_*`),
 nunca bajo los pies del personaje:
@@ -152,11 +152,22 @@ van a sangre (el `AppIcon` igual lleva el cuello, la curita y las suelas en crem
    salpicaduras, líneas de movimiento ni burbujas sueltas. Lo que hace destacar al cuarto de cada piso y al Dios sale
    del personaje: ropa, pose, objetos en la mano, materiales brillantes. Una luz de borde SOBRE el personaje está bien.
    Nada translúcido (el Fantasma es de vinilo opaco).
+4. **Nada apoyado al lado del pie** (2026-11-11 ~16:00, del chat del dueño, sale de la regla 1): toda pelota u objeto va
+   en la mano, bajo el brazo o contra la cadera, nunca tocando el suelo; si no, flota o patina contra el fondo. Por eso
+   el Rey del Potrero y el Goleador Infantil llevan la pelota bajo el brazo, los volantes corren con la pelota bajo el
+   brazo y la pelota de cuero de la skin Retro va bajo el brazo. El bebé abrazando la pelota está bien.
+5. **El cuarto de cada piso se destaca desde el personaje** (mismo origen): sin pedestal, el destaque sale de la pose
+   triunfal, un poco más de escala y detalle, la tela satinada con dorados y el premio del piso en alto, pegado a la
+   silueta. Los premios: Rey del Potrero, copita de lata abollada del torneo del barrio; Promesa del Barrio, medalla
+   dorada con cinta amarilla; los cuatro de Sexta, copita dorada de la liga juvenil; Debutante Profesional, su
+   camiseta del debut con el 22 flameando; Debutante en Primera, la pelota de su debut firmada en dorado; Campeón
+   Nacional, copa de liga inventada de dos asas; Estrella en el Exterior, estatuilla dorada con forma de estrella;
+   Capitán de la Selección, la cinta amarilla de capitán; Leyenda Eterna, un botín de oro inventado.
 
 El cierre de encuadre de todo personaje de cuerpo entero (ASCII puro, palabra por palabra):
 
 > Full body standing character, both feet visible, hands visible, complete figure with generous margins, nothing
-> under or around the feet: no base, no pedestal, no ground, no grass, no clouds, no floor shadow; no aura, glow,
+> under or around the feet: no base, no pedestal, no ground, no grass, no clouds, no floor shadow, and no ball or prop resting on the ground next to the feet (every ball or prop is held in the hands, tucked under an arm or against the hip, never touching the ground); no aura, glow,
 > halo, sparkles or particles outside the silhouette; no pure white anywhere on the character (use cream or ivory
 > instead), centered on a plain pure white background, square image, no text, no watermark, no cropping.
 
