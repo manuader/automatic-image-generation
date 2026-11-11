@@ -39,4 +39,7 @@ y va al dueño apenas está.
 
 Qué mirar al comparar: los cuatro rasgos del protagonista en las 7 imágenes donde aparece (remolino, pecas, curita en la
 rodilla IZQUIERDA, botines lima), que el 04 se vea mucho más destacado que el 02, que la skin 05 conserve la silueta del
-04, el Dios sin número, sin rulos y sin celeste y blanca, y la lista negra legal en todas.
+04, el Dios sin número, sin rulos y sin celeste y blanca, y la lista negra legal en todas. Desde la corrección del
+dueño del 2026-11-11 (~15:30), además la regla de recorte de la biblia: nada bajo ni alrededor de los pies (ni base,
+ni nubes, ni sombra), nada de blanco puro dentro del personaje (crema) y nada fuera de la silueta (ni aura, ni
+destellos); el 04 destaca por la ropa, la pose y los materiales.
