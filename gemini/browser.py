@@ -29,6 +29,14 @@ class Browser(WebChatBrowser):
     #: un prompt trivial sin referencia pasa igual). Ver `_explain_silence`.
     GENERATING_MARKERS = ("creando tu imagen", "creating your image")
 
+    #: La respuesta vacía de Flash-Lite con la cuota de imágenes gastada
+    #: (2026-11-11): «Gemini dijo · Flash-Lite · Gemini es una IA y puede
+    #: cometer errores.» al final de la página, sin nada en el medio.
+    EMPTY_REPLY_PATTERN = (
+        r"(gemini dijo|gemini said) (?:[\w.\- ]{0,24} )?"
+        r"gemini (es una ia|is ai)[^.]*\.?$"
+    )
+
     ERROR_PATTERNS = {
         "captcha": "Gemini mostró un CAPTCHA",
         "límite de uso": "Gemini alcanzó su límite de uso",

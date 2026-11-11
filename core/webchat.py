@@ -27,6 +27,8 @@ las que ese sitio dice "no puedo". Nada más.
 
 from __future__ import annotations
 
+import re
+
 import base64
 import subprocess
 import sys
@@ -172,6 +174,10 @@ class WebChatBrowser:
     #: se busca SÓLO cuando ya venció el timeout, para distinguir "tardó" de "no
     #: va a contestar nunca". Ver `_explain_silence`.
     GENERATING_MARKERS: tuple[str, ...] = ()
+    #: Cómo se ve, en el texto visible en minúsculas y con los espacios
+    #: aplanados, una respuesta que terminó VACÍA: ni imagen ni texto. Se busca
+    #: sólo vencido el timeout, como `GENERATING_MARKERS`. Ver `_explain_silence`.
+    EMPTY_REPLY_PATTERN: str | None = None
     #: Frases que comparten substring con un bloqueo real pero NO bloquean nada.
     #: El banner "estás por alcanzar el límite de uso" es un aviso preventivo: el
     #: chat sigue generando. Como contiene "límite de uso", sin sacarlo antes de
@@ -810,6 +816,8 @@ class WebChatBrowser:
         except Exception:  # noqa: BLE001 — si ni la página se puede leer, va el error original
             return error
         marker = next((mark for mark in self.GENERATING_MARKERS if mark in page), None)
+        if marker is None and self._reply_is_empty():
+            marker = "respuesta vacía"
         if marker is None:
             return error
         return GenerationBlocked(
@@ -818,6 +826,23 @@ class WebChatBrowser:
             "no informa. Subir --timeout no cambia nada. Esperá a que se renueve y "
             "volvé a correr el mismo comando: la cola retoma donde quedó."
         )
+
+    def _reply_is_empty(self) -> bool:
+        """¿La última respuesta del sitio quedó vacía?
+
+        2026-11-11 (E18-F7): con la cuota de imágenes gastada, Gemini pasa solo
+        a «Flash-Lite» y contesta NADA —«Gemini dijo», el chip del modelo y el
+        pie, sin imagen ni texto ni el cartel de «Creando tu imagen»—. Como no
+        había cartel, el timeout se leía como un problema de la imagen: el
+        supervisor quemaba sus 3 intentos por personaje, lo dejaba afuera y
+        nunca pausaba a Gemini para rotar a ChatGPT."""
+        if not self.EMPTY_REPLY_PATTERN:
+            return False
+        try:
+            text = " ".join(self._visible_text().lower().split())
+        except Exception:  # noqa: BLE001 — sin texto legible no se culpa a la cuota
+            return False
+        return re.search(self.EMPTY_REPLY_PATTERN, text) is not None
 
     def probe(self) -> dict:
         """Abre el chat y dice qué reconoció, sin escribir ni enviar nada.

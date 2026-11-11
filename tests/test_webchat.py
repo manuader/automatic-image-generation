@@ -762,6 +762,55 @@ class SilentQuotaTests(unittest.TestCase):
         self.assertIs(Broken("")._explain_silence(original), original)
 
 
+class EmptyReplyTests(unittest.TestCase):
+    """2026-11-11 (E18-F7): con la cuota de imágenes gastada Gemini pasa a
+    Flash-Lite y contesta vacío, sin el cartel de «Creando tu imagen». Ese
+    timeout tiene que leerse como la cuota trabada —para que el supervisor pause
+    y rote— y no como un problema de la imagen que quema sus 3 intentos."""
+
+    class Page(Gemini):
+        def __init__(self, visible):
+            super().__init__()
+            self.visible = visible
+
+        def _driver(self):
+            return self
+
+        @property
+        def page_source(self):
+            return "<html></html>"
+
+        def execute_script(self, script, *args):
+            return self.visible
+
+    # El final real de la página, leído por CDP el 2026-11-11 19:09.
+    REAL = ("…square image, no text, no watermark, no cropping.\n\nGemini dijo\n\n\n\n\n"
+            "Flash-Lite\n\nGemini es una IA y puede cometer errores.")
+
+    def test_the_real_empty_flash_lite_reply_is_the_stuck_quota(self):
+        explained = str(self.Page(self.REAL)._explain_silence(GenerationBlocked("timeout")))
+
+        self.assertIn("se quedó en «", explained)
+        self.assertIn("cuota de IMÁGENES agotada", explained)
+
+    def test_the_supervisor_reads_it_as_quota(self):
+        import supervisor
+
+        explained = str(self.Page(self.REAL)._explain_silence(GenerationBlocked("timeout")))
+        self.assertEqual(supervisor.classify(explained), supervisor.QUOTA)
+
+    def test_a_reply_with_text_is_not_empty(self):
+        page = self.Page("Gemini dijo\n\nNo puedo crear esa imagen.\nFlash\n"
+                         "Gemini es una IA y puede cometer errores.")
+        original = GenerationBlocked("timeout")
+        self.assertIs(page._explain_silence(original), original)
+
+    def test_before_the_reply_starts_nothing_is_blamed(self):
+        page = self.Page("…no cropping.\nFlash-Lite\nGemini es una IA y puede cometer errores.")
+        original = GenerationBlocked("timeout")
+        self.assertIs(page._explain_silence(original), original)
+
+
 class VisibleTextTests(unittest.TestCase):
     """El bloqueo se busca en lo que la página muestra, no en su JavaScript."""
 
