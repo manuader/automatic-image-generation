@@ -189,6 +189,8 @@ class ClassifyTest(unittest.TestCase):
                                   "caracteres"), BROWSER)
         self.assertEqual(classify("timeout esperando que gemini abra la conversación tras "
                                   "enviar"), BROWSER)
+        self.assertEqual(classify("Message: invalid session id: session deleted as the "
+                                  "browser has closed the connection"), BROWSER)
         self.assertEqual(classify("timeout esperando la imagen generada"), ASSET)
         self.assertEqual(classify("Gemini no pudo generar la imagen"), ASSET)
 

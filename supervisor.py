@@ -73,6 +73,9 @@ BROWSER_MARKERS = (
     "no pude conectar selenium", "no encontré el cuadro", "no encontré el editor",
     "no envío", "el prompt no llegó", "abra la conversación tras enviar", "no pude devolverle el foco", "el editor no aceptó",
     "falta selenium", "chrome abrió pero",
+    # 2026-11-11 (E18-F7): chromedriver perdió el Chrome a mitad del pedido. No
+    # es de la imagen: contarlo como ASSET dejó afuera a goleador_primera_idle.
+    "invalid session id", "browser has closed the connection",
 )
 
 #: Así dice Gemini que aceptó el pedido y no devolvió nada (ver `_explain_silence`).
