@@ -34,6 +34,7 @@ def derive_game_assets(
     key: str,
     sizes: list[int],
     punch_holes: bool = False,
+    floor_shadow: bool = False,
 ) -> list[Path]:
     """Recorta el fondo y exporta los tamaños pedidos. Devuelve lo escrito.
 
@@ -50,7 +51,7 @@ def derive_game_assets(
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     with Image.open(original) as image:
-        transparent = cutout(image.convert("RGBA"), punch_holes=punch_holes)
+        transparent = cutout(image.convert("RGBA"), punch_holes=punch_holes, floor_shadow=floor_shadow)
 
     written = [assets_dir / f"{key}.png"]
     transparent.save(written[0])
@@ -80,5 +81,6 @@ def derive_for_project(project: Project, key: str, original: Path) -> list[Path]
         project.assets,
         key,
         project.settings["sizes"],
-        punch_holes=key in set(project.settings["punch_holes"]),
+        punch_holes=project.punches_holes(key),
+        floor_shadow=bool(project.settings["floor_shadow"]),
     )

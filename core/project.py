@@ -33,7 +33,11 @@ DEFAULT_SETTINGS: dict = {
     #: resolución nativa.
     "sizes": [],
     #: Claves cuyo blanco encerrado SÍ es un hueco calado y no parte del dibujo.
+    #: `"*"` = todas: sólo en proyectos cuya regla prohíbe el blanco puro
+    #: adentro del sujeto (football-evolution).
     "punch_holes": [],
+    #: Sacar la sombra de piso gris que el modelo dibuja bajo los pies.
+    "floor_shadow": False,
     #: Distancia MAE bajo la cual una imagen se considera "es la referencia
     #: adjunta" y se descarta. Bajalo cuando la referencia sea casi lo mismo que
     #: se está generando (una variante del mismo personaje).
@@ -61,6 +65,11 @@ class Project:
                 f"Los modos son {' | '.join(OUTPUT_MODES)}."
             )
         return cls(root=root, settings=settings)
+
+    def punches_holes(self, key: str) -> bool:
+        """Si el blanco encerrado de esta clave es hueco y no dibujo."""
+        holes = self.settings["punch_holes"]
+        return holes == "*" or key in set(holes)
 
     @property
     def prompts(self) -> Path:

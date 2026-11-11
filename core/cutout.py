@@ -36,6 +36,15 @@ FEATHER = 3
 # dentro de una zona clara, no un hueco que el dibujo quiso dejar.
 MIN_HOLE_AREA = 256
 
+# Sólo con `floor_shadow`: la sombra de piso que el modelo dibuja bajo los pies
+# aunque el prompt la prohíba. Es gris neutro (los canales casi iguales) y clara;
+# el crema que la regla de recorte pide en lugar del blanco (#FFF3DC) tiene una
+# dispersión de 35 entre canales, así que no se confunde con ella.
+SHADOW_SPREAD = 10
+SHADOW_MAX_DISTANCE = 64
+# Fracción de la altura del sujeto, contada desde abajo, donde se busca la sombra.
+SHADOW_BAND = 0.15
+
 
 def white_distance(rgb: np.ndarray) -> np.ndarray:
     """Cuánto se aleja cada píxel del blanco puro, por el canal que más se aleja.
@@ -45,7 +54,28 @@ def white_distance(rgb: np.ndarray) -> np.ndarray:
     return 255 - rgb.min(axis=2).astype(np.int16)
 
 
-def background_mask(distance: np.ndarray, punch_holes: bool = False) -> np.ndarray:
+def floor_shadow_candidates(rgb: np.ndarray, distance: np.ndarray) -> np.ndarray:
+    """Gris neutro y claro en la franja de abajo del sujeto: la sombra de piso.
+
+    La franja se mide sobre lo que no es blanco, así que depende de dónde estén
+    los pies y no del tamaño del lienzo."""
+    spread = rgb.max(axis=2).astype(np.int16) - rgb.min(axis=2).astype(np.int16)
+    neutral = (spread <= SHADOW_SPREAD) & (distance > WHITE_TOLERANCE) & (distance <= SHADOW_MAX_DISTANCE)
+    rows = np.flatnonzero((distance > WHITE_TOLERANCE).any(axis=1))
+    if rows.size == 0:
+        return np.zeros_like(neutral)
+    top, bottom = rows.min(), rows.max()
+    band_top = bottom - int((bottom - top) * SHADOW_BAND)
+    band = np.zeros_like(neutral)
+    band[band_top:] = True
+    return neutral & band
+
+
+def background_mask(
+    distance: np.ndarray,
+    punch_holes: bool = False,
+    shadow: np.ndarray | None = None,
+) -> np.ndarray:
     """Lo blanco conectado con el borde del lienzo. El resto es dibujo.
 
     Los primeros planos apoyan los hombros contra el marco: ahí el borde tiene
@@ -59,12 +89,16 @@ def background_mask(distance: np.ndarray, punch_holes: bool = False) -> np.ndarr
     blanco puro mide igual que el fondo), de modo que la excepción se declara a
     mano, por clave, en el `project.json`."""
     whiteish = distance <= WHITE_TOLERANCE
-    labels, count = ndimage.label(whiteish)
+    # La sombra cuenta como fondo sólo si se toca con el fondo: así el blanco que
+    # queda entre las piernas, aislado por la sombra, también se va.
+    passable = whiteish if shadow is None else whiteish | shadow
+    labels, count = ndimage.label(passable)
     if count == 0:
         return np.zeros_like(whiteish)
 
     border = np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]])
-    seeds = np.unique(border[border > 0])
+    border_white = np.concatenate([whiteish[0], whiteish[-1], whiteish[:, 0], whiteish[:, -1]])
+    seeds = np.unique(border[(border > 0) & border_white])
     if seeds.size == 0:
         # Un dibujo que llena el lienzo de lado a lado no tiene fondo que sacar.
         return np.zeros_like(whiteish)
@@ -123,11 +157,18 @@ def undo_white_matte(rgb: np.ndarray, alpha: np.ndarray) -> np.ndarray:
     return np.clip(blended, 0, 255).astype(np.uint8)
 
 
-def cutout(image: Image.Image, punch_holes: bool = False) -> Image.Image:
-    """PNG sin fondo, con el sujeto entero — incluido todo lo blanco que tenga."""
+def cutout(
+    image: Image.Image, punch_holes: bool = False, floor_shadow: bool = False
+) -> Image.Image:
+    """PNG sin fondo, con el sujeto entero — incluido todo lo blanco que tenga.
+
+    `floor_shadow` saca además la sombra de piso gris bajo los pies (la pone el
+    motor del juego); vale para proyectos cuya regla prohíbe el blanco y el gris
+    neutro adentro del personaje."""
     rgb = np.array(image.convert("RGB"))
     distance = white_distance(rgb)
-    background = background_mask(distance, punch_holes=punch_holes)
+    shadow = floor_shadow_candidates(rgb, distance) if floor_shadow else None
+    background = background_mask(distance, punch_holes=punch_holes, shadow=shadow)
     alpha = alpha_from_background(distance, background)
     clean = undo_white_matte(rgb, alpha)
     return Image.fromarray(
