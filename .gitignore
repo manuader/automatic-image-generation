@@ -13,6 +13,9 @@ __pycache__/
 # son el activo del proyecto: copialos aparte, no confíes en git para eso.
 projects/*/output/
 projects/*/state/
+# La salida de un piloto corrido en dos motores, apartada por motor (output-gemini/, output-chat-gpt/…).
+projects/*/output-*/
+projects/*/state-*/
 
 # Más salida, por el mismo motivo: los originales que se reemplazaron, lo que se
 # descartó, la hoja de contactos (se regenera con contact_sheet.py) y el binario

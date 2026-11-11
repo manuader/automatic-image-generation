@@ -1,0 +1,7 @@
+{
+  "engine": "gemini",
+  "output": "game-asset",
+  "sizes": [384, 512],
+  "punch_holes": ["ui_trophy_gold", "ui_trophy_silver", "ui_trophy_bronze", "ui_album_card_frame", "wheel_frame"],
+  "reference_threshold": 4
+}
