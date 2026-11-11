@@ -10,6 +10,7 @@ import io
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from PIL import Image
@@ -49,6 +50,27 @@ class BlockDetectionTests(unittest.TestCase):
     def test_other_blocks_are_untouched(self):
         self.assertIsNotNone(Gemini.contains_error("<div>Something went wrong</div>"))
         self.assertIsNotNone(Gemini.contains_error("<div>Resolve the CAPTCHA</div>"))
+
+
+class ComposeWaitTests(unittest.TestCase):
+    """El editor que todavía no cargó no es un editor perdido."""
+
+    def _browser(self, apariciones):
+        browser = Gemini.__new__(Gemini)
+        browser.COMPOSE_WAIT_SECONDS = 5.0
+        intentos = iter(apariciones)
+        browser._find_first = lambda selectors: next(intentos, None)
+        return browser
+
+    def test_espera_al_editor_que_aparece_tarde(self):
+        browser = self._browser([None, None, "editor"])
+        with unittest.mock.patch.object(webchat.time, "sleep"):
+            self.assertEqual(browser._compose_field(), "editor")
+
+    def test_sin_editor_se_rinde_al_vencer_el_plazo(self):
+        browser = self._browser([])
+        browser.COMPOSE_WAIT_SECONDS = 0.0
+        self.assertIsNone(browser._compose_field())
 
 
 class ExtractionTests(unittest.TestCase):

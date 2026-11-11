@@ -379,6 +379,26 @@ class WebChatBrowser:
             field.click()
             time.sleep(0.3)
 
+    #: Cuánto se espera a que aparezca el editor antes de darlo por perdido.
+    COMPOSE_WAIT_SECONDS = 20.0
+
+    def _compose_field(self):
+        """El editor, esperándolo un rato: la página puede estar cargando todavía.
+
+        ⚠️ 2026-11-11: se buscaba una sola vez. Con la máquina cargada (carga 160
+        con los snaps del juego), ChatGPT seguía en «Loading profile» cuando se
+        lo buscaba y cada imagen fallaba con «no encontré el cuadro de prompt»,
+        aunque el `--probe` —que sí espera— daba bien un segundo después."""
+        deadline = time.monotonic() + self.COMPOSE_WAIT_SECONDS
+        while True:
+            try:
+                field = self._find_first(self.COMPOSE_SELECTORS)
+            except TRANSIENT_DOM_ERRORS:
+                field = None
+            if field is not None or time.monotonic() >= deadline:
+                return field
+            time.sleep(0.5)
+
     def _focus_editor_dom(self):
         """Deja el editor enfocado de verdad y devuelve el elemento.
 
@@ -399,7 +419,7 @@ class WebChatBrowser:
         """
         driver = self._driver()
         driver.execute_cdp_cmd("Page.bringToFront", {})
-        field = self._find_first(self.COMPOSE_SELECTORS)
+        field = self._compose_field()
         if field is None:
             raise GenerationBlocked(f"no encontré el cuadro de prompt de {self.NAME}")
         focused = driver.execute_script(
