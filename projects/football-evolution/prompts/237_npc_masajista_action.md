@@ -1,0 +1,11 @@
+# 237 — El Masajista, action
+
+- **archivo**: `npc_masajista_action.png`
+- **estado**: pendiente
+- **referencia**: adjuntar `references/protagonista_hoja.png`
+- **familia**: npc_masajista
+- **destino en el juego**: npcs.atlas/npc_masajista_action
+
+## Prompt
+
+Art style first: glossy 3D collectible vinyl toy figure render, bobblehead proportions with a huge round head and a small chunky body, smooth plastic and soft rubber materials with subtle specular highlights, soft studio lighting from the top left, gentle ambient occlusion, vivid saturated colors, playful premium mobile game look. Match EXACTLY the art style, proportions, materials and lighting of the attached reference. The attached sheet is ONLY a style guide: do NOT draw the boy from it, draw a different, new character of the same game, described below. Character: El Masajista, the physio, a visitor who drops by the club. Football Evolution is a merge idle mobile game where one invented footballer grows from a baby into the God of Football, floor by floor. Look: a muscular kind physio in his fifties in a white polo shirt and teal shorts, a towel over his shoulder, a bucket with a big yellow magic sponge and a bottle of massage oil. Keep this exact same look in every pose of this character. Pose: squeezing the magic sponge so a splash of water flies out, proud of his miracle cure. Legal blacklist: no likeness of any real football player, no real club or national team crest, kit or color combination (no light blue and white stripes, no national team shirts), no sports brand logo, swoosh or brand stripes, no real trophy or real stadium, no number 10 anywhere. Full body character, complete figure with generous margins, centered on a plain pure white background, square image, no text, no watermark, no cropping.

@@ -1,0 +1,11 @@
+# 099 — Pibe de Cuarta (nivel 14)
+
+- **archivo**: `pibe_cuarta_idle.png`
+- **estado**: pendiente
+- **referencia**: adjuntar `references/protagonista_hoja.png`
+- **familia**: pibe_cuarta
+- **destino en el juego**: earth.atlas/pibe_cuarta_idle (@2x 384, @3x 512)
+
+## Prompt
+
+Art style first: glossy 3D collectible vinyl toy figure render, bobblehead proportions with a huge round head and a small chunky body, smooth plastic and soft rubber materials with subtle specular highlights, soft studio lighting from the top left, gentle ambient occlusion, vivid saturated colors, playful premium mobile game look. Match EXACTLY the art style, proportions, materials and lighting of the attached reference. The attached sheet shows the protagonist at three stages of his life: draw ONLY ONE figure, the stage described below, as the same person. Character: Pibe de Cuarta, level 14 of 37, floor 4 (Camino a Primera). Football Evolution is a merge idle mobile game where one invented footballer grows from a baby into the God of Football, floor by floor. Look of this level: an eighteen year old in the teal youth kit with a flashy wristband, a phone pressed to one ear and a contract folder under the other arm, acting important. He is the same invented protagonist as in the reference sheet and keeps his four fixed traits clearly visible: (1) a big upright tuft of dark brown hair sticking straight up from the crown like a cowlick, on short straight hair, never curly; (2) a sprinkle of freckles across the nose and cheeks; (3) a small white adhesive bandage on his LEFT knee; (4) lime green football boots with white soles. Same face shape, same brown eyes, same friendly cheeky grin as in the reference. No beard. One step up from the previous level: a slightly more confident look, still no base and no glow, a soft contact shadow under his feet. Legal blacklist: no likeness of any real football player, no real club or national team crest, kit or color combination (no light blue and white stripes, no national team shirts), no sports brand logo, swoosh or brand stripes, no real trophy or real stadium, no number 10 anywhere. Full body standing character, both feet visible, hands visible, complete figure with generous margins, centered on a plain pure white background, square image, no text, no watermark, no cropping.

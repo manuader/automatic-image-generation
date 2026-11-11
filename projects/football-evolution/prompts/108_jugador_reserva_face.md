@@ -1,0 +1,11 @@
+# 108 — Jugador de Reserva, cara (avatar)
+
+- **archivo**: `jugador_reserva_face.png`
+- **estado**: pendiente
+- **referencia**: adjuntar `references/protagonista_hoja.png`
+- **familia**: jugador_reserva
+- **destino en el juego**: ui.atlas/jugador_reserva_face
+
+## Prompt
+
+Art style first: glossy 3D collectible vinyl toy figure render, bobblehead proportions with a huge round head and a small chunky body, smooth plastic and soft rubber materials with subtle specular highlights, soft studio lighting from the top left, gentle ambient occlusion, vivid saturated colors, playful premium mobile game look. Match EXACTLY the art style, proportions, materials and lighting of the attached reference. The attached sheet shows the protagonist at three stages of his life: draw ONLY ONE figure, the stage described below, as the same person. Character: Jugador de Reserva, level 15 of 37, floor 4 (Camino a Primera). Football Evolution is a merge idle mobile game where one invented footballer grows from a baby into the God of Football, floor by floor. Look of this level: a nineteen year old in a plain teal reserve team kit with the number 22, a little mud on the socks, the ball resting on his hip, modest hopeful smile. He is the same invented protagonist as in the reference sheet: big upright tuft of dark brown hair sticking straight up from the crown like a cowlick, on short straight hair, never curly; freckles across the nose and cheeks; same face shape, same brown eyes, same friendly cheeky grin. No beard. His other two fixed traits, the white bandage on his LEFT knee and the lime green boots with white soles, stay out of this head and shoulders frame. Avatar of this level: the same face and outfit collar, same expression as the base look. Legal blacklist: no likeness of any real football player, no real club or national team crest, kit or color combination (no light blue and white stripes, no national team shirts), no sports brand logo, swoosh or brand stripes, no real trophy or real stadium, no number 10 anywhere. Head and shoulders avatar portrait, the whole head fully inside the frame, facing the viewer in a slight three quarter view, centered on a plain pure white background, square image, no text, no watermark, no cropping.

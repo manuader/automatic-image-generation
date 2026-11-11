@@ -1,0 +1,10 @@
+# 292 — Fondo del piso 3, Inferiores
+
+- **archivo**: `bg_inferiores.png`
+- **estado**: pendiente
+- **referencia**: adjuntar `references/pantalla.png`
+- **destino en el juego**: Backgrounds/bg_inferiores.jpg (2048 x 2048, raw)
+
+## Prompt
+
+Art style first: glossy 3D collectible vinyl toy figure render, bobblehead proportions with a huge round head and a small chunky body, smooth plastic and soft rubber materials with subtle specular highlights, soft studio lighting from the top left, gentle ambient occlusion, vivid saturated colors, playful premium mobile game look. Match EXACTLY the art style, proportions, materials and lighting of the attached reference. The attached screen is ONLY a style guide for materials, lighting and icon treatment: do NOT copy its layout, its characters or its numbers, draw only the subject described below. Background of floor 3 (Inferiores) of Football Evolution is a merge idle mobile game where one invented footballer grows from a baby into the God of Football, floor by floor. Scene: a football club youth training ground on a Saturday morning: rows of orange cones, a pile of yellow mesh bibs, a thermos and a gourd on a bench, a clubhouse with teal walls. Game palette: pitch green #1F5133, chalk white #F4F7F2, scoreboard black #111418, card yellow #FFD400 for action and premium gold #E2B93B, plus the natural colors of the object. Legal blacklist: no likeness of any real football player, no real club or national team crest, kit or color combination (no light blue and white stripes, no national team shirts), no sports brand logo, swoosh or brand stripes, no real trophy or real stadium, no number 10 anywhere. Square full bleed background scene for the game board, seen from a slightly elevated three quarter view like a tabletop diorama of vinyl toys, the lower two thirds an open grass area left clear for the characters, the scenery along the top third and the side edges, no characters and no people in the foreground, no UI, no text, no letters, no watermark, the image fills all four edges.
