@@ -4,6 +4,7 @@ Un prompt es un archivo `NN_clave.md` con tres cosas que le importan al runner:
 
     - **estado**: pendiente        ← pasa a `hecho` recién con el PNG verificado
     - **referencia**: `references/logo.png`   ← opcional; se adjunta al chat
+    - **familia**: ceo                        ← opcional; ver core/rotation.py
     ## Prompt
     <el texto que se le manda al modelo, tal cual>
 
@@ -24,6 +25,9 @@ STATE_RE = re.compile(r"^- \*\*estado\*\*: (?P<state>\w+)$", re.MULTILINE)
 REFERENCE_RE = re.compile(
     r"^- \*\*referencia\*\*:[^`\n]*`?(?P<path>[^`\n]+?)`?\s*$", re.MULTILINE
 )
+#: Familia de continuidad: las imágenes que tienen que salir del mismo motor y
+#: en la misma tanda (un personaje y sus skins). Una palabra, sin espacios.
+FAMILY_RE = re.compile(r"^- \*\*familia\*\*: `?(?P<family>[^`\s]+)`?\s*$", re.MULTILINE)
 #: El `00_` es el índice del set de prompts, no una imagen a generar.
 INDEX_PREFIX = "00_"
 
@@ -38,6 +42,8 @@ class Asset:
     #: Imagen a adjuntar, resuelta desde el campo `**referencia**` del .md.
     #: `None` = este prompt no lleva referencia.
     reference: Path | None
+    #: Familia de continuidad (`**familia**` del .md). `None` = imagen suelta.
+    family: str | None = None
 
     @property
     def needs_reference(self) -> bool:
@@ -68,7 +74,8 @@ def parse_asset(path: Path, base: Path) -> Asset:
         raise ValueError(f"Nombre de prompt inválido: {path.name}")
     text = path.read_text(encoding="utf-8")
     state = STATE_RE.search(text)
-    _, marker, prompt = text.partition("## Prompt")
+    header, marker, prompt = text.partition("## Prompt")
+    family = FAMILY_RE.search(header)
     if not marker or not prompt.strip():
         raise ValueError(f"Falta ## Prompt en {path}")
     return Asset(
@@ -78,6 +85,7 @@ def parse_asset(path: Path, base: Path) -> Asset:
         state=state.group("state") if state else "pendiente",
         prompt=prompt.strip(),
         reference=parse_reference(text, base),
+        family=family.group("family") if family else None,
     )
 
 

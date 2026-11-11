@@ -25,6 +25,12 @@ matan el generador, chromedriver y el Chrome del motor, y se vuelve a abrir
 (el perfil guarda la sesión). Si los reinicios se repiten sin avanzar, se espera
 cada vez más antes del próximo.
 
+Con `--rotate gemini:50,chat-gpt:50` los motores se turnan en tandas de
+imágenes ENVIADAS, para que ningún sitio vea el batch entero. Una familia de
+continuidad (`- **familia**: <id>` en el .md) no se parte entre tandas; un motor
+sin cuota cede su turno al siguiente y la cola sigue en el mismo orden. Con
+`--dry-run` se ve el plan de tandas sin abrir nada. Ver `core/rotation.py`.
+
 Estado en `state/supervisor.json`, bitácora en `state/supervisor.log` y la
 salida del generador en `state/generate.log`. Cortarlo con Ctrl-C y volver a
 correr el mismo comando sigue donde quedó.
@@ -45,10 +51,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+from core import engines as engine_registry  # noqa: E402
 from core.chrome import profile_for  # noqa: E402
 from core.checkpoint import read_json, write_json  # noqa: E402
 from core.project import Project  # noqa: E402
 from core.queue import Asset, pending_assets  # noqa: E402
+from core.rotation import Turn, describe, family_order, fits, parse_rotation, plan, unit_size  # noqa: E402,E501
 
 GENERATE = ROOT / "generate.py"
 
@@ -95,6 +103,8 @@ class State:
     skipped: dict[str, str] = field(default_factory=dict)
     blocks: dict[str, dict] = field(default_factory=dict)
     resets: int = 0
+    #: Dónde va la rotación: {"spec", "slot", "sent", "family"}. Vacío sin `--rotate`.
+    rotation: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> "State":
@@ -105,6 +115,7 @@ class State:
             skipped=data.get("skipped", {}),
             blocks=data.get("blocks", {}),
             resets=data.get("resets", 0),
+            rotation=data.get("rotation", {}),
         )
 
     def save(self) -> None:
@@ -113,6 +124,7 @@ class State:
             "skipped": self.skipped,
             "blocks": self.blocks,
             "resets": self.resets,
+            "rotation": self.rotation,
         })
 
 
@@ -121,8 +133,12 @@ class Supervisor:
                  *, max_asset_attempts: int = 3, max_failures_in_a_row: int = 3,
                  asset_timeout: int = 600, python: str = sys.executable,
                  generator: Path = GENERATE, sleep=time.sleep, now=time.time,
-                 notify=None, kill=None):
+                 notify=None, kill=None, rotation: list[Turn] | None = None):
         self.project = project
+        self.rotation = rotation
+        if rotation:
+            # Con rotación los motores son los de la rotación, y nada más.
+            engines = list(dict.fromkeys(turn.engine for turn in rotation))
         self.engines = engines
         self.engine_rules = engine_rules
         self.max_asset_attempts = max_asset_attempts
@@ -135,6 +151,11 @@ class Supervisor:
         self.notify = notify or notify_mac
         self.kill = kill or self._kill_engine
         self.state = State.load(project.state / "supervisor.json")
+        if rotation:
+            spec = rotation_spec(rotation)
+            if self.state.rotation.get("spec") != spec:
+                # Otra rotación que la de la corrida anterior: se arranca de cero.
+                self.state.rotation = {"spec": spec, "slot": 0, "sent": 0, "family": None}
         self.log_path = project.state / "supervisor.log"
         self.generate_log = project.state / "generate.log"
         #: Motores con un probe bueno desde el último bloqueo o reinicio.
@@ -309,6 +330,61 @@ class Supervisor:
             return False, ASSET, f"colgado más de {self.asset_timeout // 60} min"
         return False, BROWSER, f"el generador terminó con código {code} sin anotar motivo"
 
+    # ------------------------------------------------------------------ rotación
+
+    def rotation_plan(self) -> str:
+        """El plan de tandas desde donde está la corrida, sin tocar nada."""
+        turns = self.rotation
+        state = self.state.rotation
+        return describe(plan(self.pending(), turns, state["slot"], state["sent"]), turns)
+
+    def advance_turn(self, why: str) -> None:
+        state = self.state.rotation
+        state["slot"] = (state["slot"] + 1) % len(self.rotation)
+        state["sent"] = 0
+        self.state.save()
+        turn = self.rotation[state["slot"]]
+        self.log(f"⇄  {why}: le toca a {turn.engine} ({turn.size})")
+
+    def rotation_job(self, queue: list[Asset], ready: list[Asset]) -> tuple[Asset, str] | None:
+        """La próxima imagen y el motor del turno, o None si todos están en pausa.
+
+        La imagen es siempre la primera de la cola que se puede pedir: ni la
+        tanda ni la cuota cambian el orden, sólo quién la pide."""
+        state = self.state.rotation
+        ready_keys = {asset.key for asset in ready}
+        asset = next(asset for asset in family_order(queue) if asset.key in ready_keys)
+        in_open_family = asset.family is not None and asset.family == state.get("family")
+        if not in_open_family:
+            state["family"] = None
+            turn = self.rotation[state["slot"]]
+            if not fits(state["sent"], unit_size(asset, queue), turn.size):
+                self.advance_turn(f"tanda de {turn.engine} completa ({state['sent']} enviadas)")
+        turns = len(self.rotation)
+        offset = next((step for step in range(turns)
+                       if self.is_available(self.rotation[(state["slot"] + step) % turns].engine)),
+                      None)
+        if offset is None:
+            return None
+        for _ in range(offset):
+            engine = self.rotation[state["slot"]].engine
+            if in_open_family:
+                self.log(f"⚠  la familia {asset.family} se parte: {engine} se quedó sin "
+                         "cuota a mitad de ella")
+            self.advance_turn(f"{engine} en pausa")
+        return asset, self.rotation[state["slot"]].engine
+
+    def count_sent(self, asset: Asset, ok: bool, kind: str, reason: str) -> None:
+        """Suma a la tanda lo que llegó al sitio. Un fallo del navegador no salió;
+        una cuota avisada de entrada, tampoco. Una imagen trabada sí: se pidió."""
+        sent = ok or kind == ASSET or (kind == QUOTA and STUCK_MARKER in reason)
+        if not sent:
+            return
+        state = self.state.rotation
+        state["sent"] += 1
+        state["family"] = asset.family
+        self.state.save()
+
     # -------------------------------------------------------------------- bucle
 
     def next_job(self, ready: list[Asset]) -> tuple[Asset, str] | None:
@@ -372,7 +448,7 @@ class Supervisor:
             for asset in self.pending():
                 self.skip(asset, "su referencia no va a llegar (dependencia circular)")
             return False
-        job = self.next_job(ready)
+        job = self.rotation_job(queue, ready) if self.rotation else self.next_job(ready)
         if job is None:
             self.wait_for_an_engine(ready)
             return True
@@ -380,7 +456,10 @@ class Supervisor:
         if not self.ensure_ready(engine):
             return True
         self.log(f"→  {asset.key} con {engine} (quedan {len(queue)})")
-        self.handle(asset, engine, *self.attempt(asset, engine))
+        outcome = self.attempt(asset, engine)
+        if self.rotation:
+            self.count_sent(asset, *outcome)
+        self.handle(asset, engine, *outcome)
         return True
 
     def run(self) -> int:
@@ -402,6 +481,10 @@ class Supervisor:
         self.notify("Batch terminado",
                     f"{self.generated} generadas, {len(skipped)} quedaron afuera")
         return 0 if not skipped else 1
+
+
+def rotation_spec(turns: list[Turn]) -> str:
+    return ",".join(f"{turn.engine}:{turn.size}" for turn in turns)
 
 
 def notify_mac(title: str, message: str) -> None:
@@ -451,22 +534,45 @@ def main() -> int:
     parser.add_argument("--max-failures-in-a-row", type=int, default=3)
     parser.add_argument("--asset-timeout", type=int, default=600,
                         help="segundos antes de dar por colgado un pedido")
+    parser.add_argument("--rotate", metavar="MOTOR:N,MOTOR:N",
+                        help="tandas alternadas de N imágenes enviadas por motor, "
+                             "p. ej. gemini:50,chat-gpt:50 (reemplaza a --engines)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="con --rotate: muestra el plan de tandas y sale, sin "
+                             "abrir navegadores")
     args = parser.parse_args()
+
+    rotation = None
+    if args.rotate:
+        if args.engine_for is not None:
+            raise SystemExit("--rotate y --engine-for no se combinan: la rotación "
+                             "decide el motor de cada imagen")
+        try:
+            rotation = parse_rotation(args.rotate, engine_registry.available())
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
+    elif args.dry_run:
+        raise SystemExit("--dry-run muestra el plan de --rotate; para la cola "
+                         "sola: generate.py --dry-run")
 
     from generate import resolve_project
 
     project = Project.load(resolve_project(args.project))
+    if args.dry_run:
+        print(Supervisor(project, [], {}, rotation=rotation).rotation_plan())
+        return 0
     project.ensure_directories()
     single_instance(project)
     keep_awake()
     supervisor = Supervisor(
         project,
         engines=[engine.strip() for engine in args.engines.split(",") if engine.strip()],
-        engine_rules=parse_rules(args.engine_for if args.engine_for is not None
-                                 else ["bg_=chat-gpt"]),
+        engine_rules={} if rotation else parse_rules(
+            args.engine_for if args.engine_for is not None else ["bg_=chat-gpt"]),
         max_asset_attempts=args.max_asset_attempts,
         max_failures_in_a_row=args.max_failures_in_a_row,
         asset_timeout=args.asset_timeout,
+        rotation=rotation,
     )
     try:
         return supervisor.run()

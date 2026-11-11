@@ -15,13 +15,16 @@ if str(ROOT) not in sys.path:
 
 
 def write_prompt(directory: Path, name: str, state: str = "pendiente",
-                 reference: str | None = "references/style.png") -> Path:
+                 reference: str | None = "references/style.png",
+                 family: str | None = None) -> Path:
     """Un .md de prompt con la forma exacta que lee la cola."""
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{name}.md"
     lines = [f"# {name}", "", f"- **estado**: {state}"]
     if reference is not None:
         lines.append(f"- **referencia**: adjuntar `{reference}`")
+    if family is not None:
+        lines.append(f"- **familia**: {family}")
     lines += ["", "## Prompt", "", "Prompt de prueba.", ""]
     path.write_text("\n".join(lines), encoding="utf-8")
     return path

@@ -150,7 +150,7 @@ El texto exacto que se le manda al modelo. Todo lo que esté debajo de
 `## Prompt` se tipea tal cual, sin que el script le agregue ni le saque nada.
 ```
 
-Sólo tres cosas importan:
+Sólo tres cosas importan (y una cuarta opcional, sólo para la rotación):
 
 - **`estado`**: `pendiente` o `hecho`. Lo cambia el script solo, **después** de
   verificar el PNG. Ponerlo en `hecho` a mano es la forma de saltear un prompt.
@@ -159,6 +159,10 @@ Sólo tres cosas importan:
 - **`## Prompt`**: obligatorio. Un `.md` sin esta sección hace fallar la cola
   ruidosamente, que es lo que se quiere: mejor un error que una imagen contra un
   prompt vacío.
+- **`familia`**: opcional, una palabra (`- **familia**: ceo`). Las imágenes con
+  la misma familia salen del mismo motor y en la misma tanda de la rotación
+  (§9, "Rotación"): un personaje y sus skins, por ejemplo. Va arriba de
+  `## Prompt`; sin el campo, la imagen es suelta.
 
 ### Cómo se escribe un prompt que sale bien
 
@@ -277,6 +281,9 @@ referencia, 25.8.
 .venv/bin/python generate.py --project X --only logo       # una sola
 .venv/bin/python generate.py --project X --limit 5         # las cinco primeras
 .venv/bin/python generate.py --project X --reprocess       # rehacer la salida, sin navegador
+.venv/bin/python supervisor.py --project X                 # todo el proyecto, sin nadie mirando
+.venv/bin/python supervisor.py --project X --rotate gemini:50,chat-gpt:50 --dry-run   # el plan de tandas
+.venv/bin/python supervisor.py --project X --rotate gemini:50,chat-gpt:50             # tandas alternadas
 .venv/bin/python -m unittest discover -s tests -t tests   # los tests
 ```
 
@@ -355,6 +362,45 @@ línea de `chat-gpt/browser.py`; el archivo explica cuál y cómo. Los tests
 (`tests/test_engines.py`) ya garantizan que el perfil está completo, que los
 selectores son buscables y que las frases de bloqueo pueden llegar a matchear —
 lo que no pueden garantizar es que sean las que el sitio usa hoy.
+
+### Rotación: tandas alternadas entre motores
+
+Para que ningún sitio vea un batch entero —y no banee la cuenta—, el supervisor
+puede turnar los motores en tandas:
+
+```bash
+.venv/bin/python supervisor.py --project X --rotate gemini:50,chat-gpt:50 --dry-run
+.venv/bin/python supervisor.py --project X --rotate gemini:50,chat-gpt:50
+```
+
+50 imágenes con Gemini, 50 con ChatGPT, 50 con Gemini… hasta vaciar la cola. Las
+reglas:
+
+- **Se cuentan las enviadas, no las logradas.** Un pedido que llegó al sitio
+  cuenta aunque la imagen no salga (un reintento cuenta otra vez); un fallo del
+  navegador antes de enviar o una cuota avisada de entrada no cuentan.
+- **La cola manda.** Lo que ya está `hecho` o tiene su PNG en `output/` no se
+  envía, y el orden es siempre el de la cola: la rotación sólo decide qué motor
+  pide la próxima imagen.
+- **Sin cuota, cede el turno.** Si el motor de turno se queda sin cuota (o su
+  sesión se cerró), queda en pausa como siempre y la tanda arranca en el próximo
+  motor, con la misma imagen que falló primero. Si todos están en pausa, espera.
+- **Una familia no se parte.** Si la familia que sigue (§4, `familia`) no entra
+  entera en lo que le queda a la tanda, la tanda **corta antes** y la familia
+  arranca la siguiente: las tandas nunca pasan de su tamaño. La única excepción
+  es una familia más grande que una tanda entera: va sola en la suya, completa.
+  Los miembros de una familia viajan juntos aunque estén desparramados en la
+  numeración (en el lugar del primero). Lo único que puede partir una familia es
+  la cuota a mitad de ella; queda avisado con ⚠ en `state/supervisor.log`.
+- **Se retoma.** El turno y lo enviado en él se guardan en
+  `state/supervisor.json`: Ctrl-C y el mismo comando siguen en la misma tanda.
+  Cambiar el `--rotate` arranca la rotación de cero.
+- **`--dry-run`** muestra el plan —motor, cantidad y familias de cada tanda—
+  desde donde quedó la corrida, sin abrir navegadores ni tocar el estado. Es el
+  plan sin cuotas: si un motor se queda sin, las tandas se corren, el orden no.
+
+Con `--rotate`, la lista de motores es la de la rotación (`--engines` no se usa)
+y `--engine-for` no se combina: la rotación decide el motor de cada imagen.
 
 ### Agregar un motor nuevo
 
