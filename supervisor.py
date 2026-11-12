@@ -31,6 +31,12 @@ continuidad (`- **familia**: <id>` en el .md) no se parte entre tandas; un motor
 sin cuota cede su turno al siguiente y la cola sigue en el mismo orden. Con
 `--dry-run` se ve el plan de tandas sin abrir nada. Ver `core/rotation.py`.
 
+Con `--parallel gemini:50,chat-gpt:50` los motores trabajan A LA VEZ, cada uno
+en su hilo con su propia cola de tandas: reserva 50 del frente de la cola, las
+pide y reserva las siguientes. Lo que tiene que ir junto (una familia, o una
+imagen hecha sobre la salida de otra) va al mismo motor; un motor en pausa
+suelta lo que no empezó. Ver `core/parallel.py` y `Lane`.
+
 Estado en `state/supervisor.json`, bitácora en `state/supervisor.log` y la
 salida del generador en `state/generate.log`. Cortarlo con Ctrl-C y volver a
 correr el mismo comando sigue donde quedó.
@@ -39,11 +45,13 @@ correr el mismo comando sigue donde quedó.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -53,7 +61,8 @@ sys.path.insert(0, str(ROOT))
 
 from core import engines as engine_registry  # noqa: E402
 from core.chrome import profile_for  # noqa: E402
-from core.checkpoint import read_json, write_json  # noqa: E402
+from core.checkpoint import read_json, update_json, write_json  # noqa: E402
+from core.parallel import claim_batch, parse_parallel  # noqa: E402
 from core.project import Project  # noqa: E402
 from core.queue import Asset, pending_assets  # noqa: E402
 from core.rotation import Turn, describe, family_order, fits, parse_rotation, plan, unit_size  # noqa: E402,E501
@@ -108,6 +117,9 @@ class State:
     resets: int = 0
     #: Dónde va la rotación: {"spec", "slot", "sent", "family"}. Vacío sin `--rotate`.
     rotation: dict = field(default_factory=dict)
+    #: Las tandas reservadas de cada motor: {"spec", "claims": {motor: [unidad]}},
+    #: con unidad = {"keys": [...], "started": bool}. Vacío sin `--parallel`.
+    parallel: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> "State":
@@ -119,6 +131,7 @@ class State:
             blocks=data.get("blocks", {}),
             resets=data.get("resets", 0),
             rotation=data.get("rotation", {}),
+            parallel=data.get("parallel", {}),
         )
 
     def save(self) -> None:
@@ -128,6 +141,7 @@ class State:
             "blocks": self.blocks,
             "resets": self.resets,
             "rotation": self.rotation,
+            "parallel": self.parallel,
         })
 
 
@@ -167,6 +181,14 @@ class Supervisor:
         self.resets_without_progress = 0
         self.stuck_in_a_row = 0
         self.generated = 0
+        #: El grupo de procesos del último generador (él y su chromedriver).
+        self.generator_pgid: int | None = None
+
+    def blocking(self):
+        """Envuelve lo que espera afuera (un proceso, un sleep). Solo, no hace
+        nada; en un carril de `--parallel` suelta el candado compartido para que
+        el otro motor siga mientras éste espera (ver `Lane`)."""
+        return contextlib.nullcontext()
 
     # ------------------------------------------------------------------ bitácora
 
@@ -245,8 +267,9 @@ class Supervisor:
         """Chrome abierto y el chat reconocido, sin gastar cuota (`--probe`)."""
         if engine in self.verified:
             return True
-        launch = subprocess.run(self.generator_cmd("--engine", engine, "--launch"),
-                                capture_output=True, text=True, timeout=60)
+        with self.blocking():
+            launch = subprocess.run(self.generator_cmd("--engine", engine, "--launch"),
+                                    capture_output=True, text=True, timeout=60)
         if launch.returncode != 0:
             self.block(engine, f"no pude abrir su Chrome: {launch.stderr.strip()[-200:]}",
                        LOGIN_COOLDOWN_MINUTES)
@@ -255,8 +278,9 @@ class Supervisor:
         # cargar (medido en ChatGPT: "compose_box": null y al rato "div").
         for _ in range(2):
             try:
-                probe = subprocess.run(self.generator_cmd("--engine", engine, "--probe"),
-                                       capture_output=True, text=True, timeout=120)
+                with self.blocking():
+                    probe = subprocess.run(self.generator_cmd("--engine", engine, "--probe"),
+                                           capture_output=True, text=True, timeout=120)
                 result = json.loads(probe.stdout)
             except (subprocess.TimeoutExpired, ValueError):
                 self.block(engine, "el probe no contestó", LOGIN_COOLDOWN_MINUTES)
@@ -306,17 +330,18 @@ class Supervisor:
 
     def attempt(self, asset: Asset, engine: str) -> tuple[bool, str, str]:
         """Pide UNA imagen. Devuelve (salió, tipo de fallo, motivo)."""
-        checkpoint = read_json(self.project.checkpoint, {}) or {}
-        # El motivo de un intento viejo no puede pasar por el de éste.
-        if checkpoint.get("failures", {}).pop(asset.key, None) is not None:
-            write_json(self.project.checkpoint, checkpoint)
+        # El motivo de un intento viejo no puede pasar por el de éste. Bajo el
+        # candado de run.json: con `--parallel` otro generador escribe a la vez.
+        update_json(self.project.checkpoint,
+                    lambda data: data.setdefault("failures", {}).pop(asset.key, None), {})
         command = self.generator_cmd(
             "--project", str(self.project.root), "--engine", engine, "--only", asset.key,
             "--retries", "0", "--max-consecutive-failures", "1",
         )
-        with open(self.generate_log, "a", encoding="utf-8") as output:
+        with open(self.generate_log, "a", encoding="utf-8") as output, self.blocking():
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT,
                                        start_new_session=True)
+            self.generator_pgid = process.pid
             try:
                 code = process.wait(timeout=self.asset_timeout)
             except subprocess.TimeoutExpired:
@@ -486,6 +511,263 @@ class Supervisor:
         return 0 if not skipped else 1
 
 
+#: Cuánto duerme un carril sin nada que pedir antes de volver a mirar: el otro
+#: motor puede soltar su tanda (cuota) o terminar la cola.
+IDLE_SECONDS = 60
+
+
+class Lane(Supervisor):
+    """Un motor de `--parallel`: su tanda, sus contadores y su Chrome.
+
+    Los carriles corren en hilos del mismo proceso y comparten el `State` y la
+    bitácora. Todo lo que decide y anota corre con `lock` tomado; lo único que
+    lo suelta es la espera de afuera —el generador, el probe, un sleep— vía
+    `blocking`. Así dos carriles nunca tocan el estado a la vez y, aun así, los
+    dos navegadores trabajan al mismo tiempo.
+
+    Lo que NO se comparte, a propósito: los fallos seguidos, la traba de
+    Gemini, los reinicios sin avanzar y el probe verificado son de cada motor.
+    Y el reinicio duro mata SÓLO lo de este motor (su generador con su
+    chromedriver, y su Chrome por el perfil): el `pkill chromedriver` del modo
+    de a uno se llevaría el pedido en curso del otro.
+    """
+
+    def __init__(self, project: Project, turn: Turn, *, lock: threading.Lock,
+                 state: State, sleep=time.sleep, notify=None, kill=None, **kwargs):
+        self.lock = lock
+        self._raw_sleep = sleep
+        super().__init__(project, [turn.engine], {},
+                         sleep=self._unlocked(sleep),
+                         notify=self._unlocked(notify or notify_mac),
+                         kill=self._unlocked(kill or self._kill_own), **kwargs)
+        self.turn = turn
+        self.engine = turn.engine
+        self.state = state
+        # Uno por motor: las salidas de dos generadores intercaladas no se leen.
+        self.generate_log = project.state / f"generate-{turn.engine}.log"
+        self._idle_note = ""
+
+    @contextlib.contextmanager
+    def blocking(self):
+        self.lock.release()
+        try:
+            yield
+        finally:
+            self.lock.acquire()
+
+    def _unlocked(self, function):
+        def call(*args):
+            with self.blocking():
+                return function(*args)
+        return call
+
+    def _kill_own(self, engine: str) -> None:
+        if self.generator_pgid is not None:
+            try:
+                os.killpg(self.generator_pgid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+        subprocess.run(["pkill", "-f", f"--user-data-dir={profile_for(engine)}"],
+                       capture_output=True)
+        self._raw_sleep(3)
+
+    # ------------------------------------------------------------------ tandas
+
+    def claims(self) -> list[dict]:
+        return self.state.parallel["claims"].setdefault(self.engine, [])
+
+    def taken_by_others(self) -> set[str]:
+        return {key for engine, claimed in self.state.parallel["claims"].items()
+                if engine != self.engine for unit in claimed for key in unit["keys"]}
+
+    def lane_job(self, queue: list[Asset], ready: list[Asset]) -> Asset | None:
+        """La próxima imagen de la tanda de este motor; si la tanda se terminó,
+        reserva la siguiente. None si el motor está en pausa o no hay nada libre."""
+        pending = {asset.key for asset in queue}
+        mine = []
+        for unit in self.claims():
+            keys = [key for key in unit["keys"] if key in pending]
+            if keys:
+                mine.append({"keys": keys, "started": unit["started"]})
+        if not self.is_available(self.engine):
+            self._set_claims(mine)
+            return None
+        if not mine:
+            batch = claim_batch(queue, self.turn.size, self.taken_by_others())
+            mine = [{"keys": keys, "started": False} for keys in batch]
+            if mine:
+                keys = [key for unit in mine for key in unit["keys"]]
+                self.log(f"▶  {self.engine} reserva su tanda: {len(keys)} imágenes "
+                         f"({keys[0]} … {keys[-1]})")
+            else:
+                mine = self.take_from_paused(pending)
+        self._set_claims(mine)
+        ready_keys = {asset.key for asset in ready}
+        by_key = {asset.key: asset for asset in queue}
+        for unit in mine:
+            for key in unit["keys"]:
+                if key in ready_keys:
+                    return by_key[key]
+        return None
+
+    def take_from_paused(self, pending: set[str]) -> list[dict]:
+        """Lo último que queda: una familia a medio hacer de un motor en pausa.
+
+        Esperar su cuota es lo correcto mientras haya otra cosa que hacer; con
+        la cola vacía para este motor, esperar horas no le sirve a nadie. Se la
+        lleva, avisando, igual que la rotación cuando la cuota parte una familia."""
+        for engine, claimed in self.state.parallel["claims"].items():
+            if engine == self.engine or self.is_available(engine) or not claimed:
+                continue
+            unit = claimed.pop(0)
+            keys = [key for key in unit["keys"] if key in pending]
+            self.state.save()
+            if keys:
+                self.log(f"⚠  la familia de {keys[0]} se parte: {engine} sigue en pausa "
+                         f"y {self.engine} no tiene otra cosa que hacer")
+                return [{"keys": keys, "started": True}]
+        return []
+
+    def _set_claims(self, units: list[dict]) -> None:
+        if units != self.claims():
+            self.state.parallel["claims"][self.engine] = units
+            self.state.save()
+
+    def handle(self, asset: Asset, engine: str, ok: bool, kind: str, reason: str) -> None:
+        """Lo de siempre; y una unidad con una imagen ya hecha queda empezada:
+        el resto de la familia sale de este motor (ver `block`)."""
+        if ok:
+            for unit in self.claims():
+                if asset.key in unit["keys"] and not unit["started"]:
+                    unit["started"] = True
+                    self.state.save()
+        super().handle(asset, engine, ok, kind, reason)
+
+    def block(self, engine: str, reason: str, minutes: int | None = None) -> None:
+        """La pausa de siempre, y además suelta lo que este motor no empezó: que
+        lo pida el otro en vez de esperar horas. Una unidad empezada —una familia
+        con alguna imagen ya hecha por este motor— se queda: el resto sale del
+        mismo motor, salvo que el otro se quede sin nada (`take_from_paused`)."""
+        super().block(engine, reason, minutes)
+        kept = [unit for unit in self.claims() if unit["started"]]
+        released = sum(len(unit["keys"]) for unit in self.claims() if not unit["started"])
+        if released:
+            self._set_claims(kept)
+            self.log(f"⇄  {engine} suelta {released} imágenes de su tanda para el otro motor")
+        if kept:
+            waiting = ", ".join(unit["keys"][0] for unit in kept)
+            self.log(f"⚠  {engine} se queda con lo empezado ({waiting}): espera su cuota")
+
+    # -------------------------------------------------------------------- bucle
+
+    def idle(self) -> None:
+        if not self.is_available(self.engine):
+            note = f"{self.engine} en pausa"
+            seconds = min(max(self.blocked_until(self.engine) - self.now(), 30), IDLE_SECONDS)
+        else:
+            note = f"{self.engine} sin nada libre: espera a que el otro termine o suelte"
+            seconds = IDLE_SECONDS
+        if note != self._idle_note:
+            self.log(f"…  {note}")
+            self._idle_note = note
+        self.sleep(seconds)
+
+    def step(self) -> bool:
+        queue = self.pending()
+        if not queue:
+            return False
+        ready = self.ready(queue)
+        if not ready:
+            for asset in self.pending():
+                self.skip(asset, "su referencia no va a llegar (dependencia circular)")
+            return False
+        asset = self.lane_job(queue, ready)
+        if asset is None:
+            self.idle()
+            return True
+        self._idle_note = ""
+        if not self.ensure_ready(self.engine):
+            return True
+        self.log(f"→  {asset.key} con {self.engine} (quedan {len(queue)})")
+        self.handle(asset, self.engine, *self.attempt(asset, self.engine))
+        return True
+
+    def lane_loop(self, stop: threading.Event) -> None:
+        with self.lock:
+            while not stop.is_set():
+                try:
+                    if not self.step():
+                        break
+                except Exception as error:  # noqa: BLE001 — un carril no se cae por un paso
+                    self.log(f"!  error del carril {self.engine}: {error!r}; sigo en 10 s")
+                    self.failures_in_a_row += 1
+                    self.sleep(10)
+
+
+class ParallelSupervisor:
+    """Los motores de `--parallel`, cada uno en su carril (ver `Lane`)."""
+
+    def __init__(self, project: Project, turns: list[Turn], *, notify=None, **kwargs):
+        self.project = project
+        self.turns = turns
+        self.lock = threading.Lock()
+        self.state = State.load(project.state / "supervisor.json")
+        spec = rotation_spec(turns)
+        if self.state.parallel.get("spec") != spec:
+            # Otro reparto que el de la corrida anterior: las reservas se tiran.
+            self.state.parallel = {"spec": spec, "claims": {}}
+        self.notify = notify or notify_mac
+        self.lanes = [Lane(project, turn, lock=self.lock, state=self.state,
+                           notify=self.notify, **kwargs) for turn in turns]
+
+    def log(self, message: str) -> None:
+        self.lanes[0].log(message)
+
+    def plan(self) -> str:
+        """Las primeras tandas de cada motor, sin tocar nada (`--dry-run`)."""
+        queue = self.lanes[0].pending()
+        taken: set[str] = set()
+        lines = [f"Paralelo {rotation_spec(self.turns)}: {len(queue)} pendientes"]
+        for turn in self.turns:
+            mine = self.state.parallel["claims"].get(turn.engine) or [
+                {"keys": keys} for keys in claim_batch(queue, turn.size, taken)]
+            keys = [key for unit in mine for key in unit["keys"]]
+            taken.update(keys)
+            span = f"{keys[0]} … {keys[-1]}" if keys else "nada libre"
+            lines.append(f"  {turn.engine:<10} {len(keys):>3} de {turn.size}  "
+                         f"{len(mine)} unidades  {span}")
+        lines.append("Cada motor reserva la siguiente tanda libre al terminar la suya; "
+                     "en pausa por cuota, suelta lo que no empezó.")
+        return "\n".join(lines)
+
+    def run(self) -> int:
+        with self.lock:
+            self.log(f"=== arranca {self.project.root.name} en paralelo: "
+                     f"{len(self.lanes[0].pending())} pendientes, "
+                     f"{rotation_spec(self.turns)} ===")
+        stop = threading.Event()
+        threads = [threading.Thread(target=lane.lane_loop, args=(stop,), name=lane.engine,
+                                    daemon=True) for lane in self.lanes]
+        for thread in threads:
+            thread.start()
+        try:
+            while any(thread.is_alive() for thread in threads):
+                for thread in threads:
+                    thread.join(0.5)
+        finally:
+            stop.set()
+        generated = sum(lane.generated for lane in self.lanes)
+        skipped = self.state.skipped
+        with self.lock:
+            self.log(f"=== FIN: {generated} generadas en esta corrida "
+                     f"({', '.join(f'{lane.engine} {lane.generated}' for lane in self.lanes)}), "
+                     f"{len(skipped)} afuera ===")
+            for key, reason in skipped.items():
+                self.log(f"   afuera: {key} — {reason}")
+        self.notify("Batch terminado", f"{generated} generadas, {len(skipped)} quedaron afuera")
+        return 0 if not skipped else 1
+
+
 def rotation_spec(turns: list[Turn]) -> str:
     return ",".join(f"{turn.engine}:{turn.size}" for turn in turns)
 
@@ -540,13 +822,26 @@ def main() -> int:
     parser.add_argument("--rotate", metavar="MOTOR:N,MOTOR:N",
                         help="tandas alternadas de N imágenes enviadas por motor, "
                              "p. ej. gemini:50,chat-gpt:50 (reemplaza a --engines)")
+    parser.add_argument("--parallel", metavar="MOTOR:N,MOTOR:N",
+                        help="los motores A LA VEZ, cada uno con su cola de tandas de "
+                             "N imágenes, p. ej. gemini:50,chat-gpt:50 (reemplaza a "
+                             "--engines y a --rotate)")
     parser.add_argument("--dry-run", action="store_true",
-                        help="con --rotate: muestra el plan de tandas y sale, sin "
-                             "abrir navegadores")
+                        help="con --rotate o --parallel: muestra el plan de tandas y "
+                             "sale, sin abrir navegadores")
     args = parser.parse_args()
 
     rotation = None
-    if args.rotate:
+    parallel = None
+    if args.parallel:
+        if args.rotate or args.engine_for is not None:
+            raise SystemExit("--parallel no se combina con --rotate ni con --engine-for: "
+                             "el reparto decide el motor de cada imagen")
+        try:
+            parallel = parse_parallel(args.parallel, engine_registry.available())
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
+    elif args.rotate:
         if args.engine_for is not None:
             raise SystemExit("--rotate y --engine-for no se combinan: la rotación "
                              "decide el motor de cada imagen")
@@ -555,28 +850,42 @@ def main() -> int:
         except ValueError as error:
             raise SystemExit(str(error)) from None
     elif args.dry_run:
-        raise SystemExit("--dry-run muestra el plan de --rotate; para la cola "
-                         "sola: generate.py --dry-run")
+        raise SystemExit("--dry-run muestra el plan de --rotate o --parallel; para "
+                         "la cola sola: generate.py --dry-run")
 
     from generate import resolve_project
 
     project = Project.load(resolve_project(args.project))
+    if parallel and project.settings.get("typing", "cdp") != "cdp":
+        raise SystemExit("--parallel sólo con el tipeo cdp: el keystroke pasa por el "
+                         "teclado del sistema y dos motores se pisarían el foco")
     if args.dry_run:
-        print(Supervisor(project, [], {}, rotation=rotation).rotation_plan())
+        if parallel:
+            print(ParallelSupervisor(project, parallel).plan())
+        else:
+            print(Supervisor(project, [], {}, rotation=rotation).rotation_plan())
         return 0
     project.ensure_directories()
     single_instance(project)
     keep_awake()
-    supervisor = Supervisor(
-        project,
-        engines=[engine.strip() for engine in args.engines.split(",") if engine.strip()],
-        engine_rules={} if rotation else parse_rules(
-            args.engine_for if args.engine_for is not None else ["bg_=chat-gpt"]),
-        max_asset_attempts=args.max_asset_attempts,
-        max_failures_in_a_row=args.max_failures_in_a_row,
-        asset_timeout=args.asset_timeout,
-        rotation=rotation,
-    )
+    if parallel:
+        supervisor = ParallelSupervisor(
+            project, parallel,
+            max_asset_attempts=args.max_asset_attempts,
+            max_failures_in_a_row=args.max_failures_in_a_row,
+            asset_timeout=args.asset_timeout,
+        )
+    else:
+        supervisor = Supervisor(
+            project,
+            engines=[engine.strip() for engine in args.engines.split(",") if engine.strip()],
+            engine_rules={} if rotation else parse_rules(
+                args.engine_for if args.engine_for is not None else ["bg_=chat-gpt"]),
+            max_asset_attempts=args.max_asset_attempts,
+            max_failures_in_a_row=args.max_failures_in_a_row,
+            asset_timeout=args.asset_timeout,
+            rotation=rotation,
+        )
     try:
         return supervisor.run()
     except KeyboardInterrupt:

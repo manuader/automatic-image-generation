@@ -402,6 +402,24 @@ reglas:
 Con `--rotate`, la lista de motores es la de la rotación (`--engines` no se usa)
 y `--engine-for` no se combina: la rotación decide el motor de cada imagen.
 
+### Paralelo: los motores a la vez
+
+```bash
+.venv/bin/python supervisor.py --project X --parallel gemini:50,chat-gpt:50 --dry-run
+.venv/bin/python supervisor.py --project X --parallel gemini:50,chat-gpt:50
+```
+
+Gemini y ChatGPT trabajan al mismo tiempo, cada uno en su Chrome. Cada motor
+reserva una tanda de hasta 50 imágenes del frente de la cola, la pide y reserva
+la siguiente; una imagen reservada no la pide el otro. Una familia —o una imagen
+cuya referencia es la salida de otra pendiente— va entera al mismo motor. Un
+motor en pausa por cuota suelta lo que no empezó; una familia con alguna imagen
+ya hecha lo espera, salvo que el otro motor se quede sin nada que hacer. Las
+reservas se guardan en `state/supervisor.json` (`parallel`) y cada motor deja su
+salida en `state/generate-<motor>.log`. Sólo con el tipeo `cdp` (el default): el
+`keystroke` pasa por el teclado del sistema y dos motores se lo pisarían. Por
+qué es seguro: `docs/PARALELO-MOTORES.md`.
+
 ### Agregar un motor nuevo
 
 Un directorio con un `browser.py` que exponga una clase `Browser` heredando de
