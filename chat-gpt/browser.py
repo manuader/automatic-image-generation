@@ -70,6 +70,12 @@ class Browser(WebChatBrowser):
         "you've reached your limit": "ChatGPT alcanzó su límite de uso",
         "youve reached your limit": "ChatGPT alcanzó su límite de uso",
         "alcanzaste tu límite": "ChatGPT alcanzó su límite de uso",
+        # 2026-11-11 (E18-F7): la cuota DIARIA de imágenes la dice en texto, en
+        # el idioma del prompt. Sin esto cada personaje quemaba 3 timeouts y
+        # quedaba afuera, y ChatGPT no se pausaba.
+        "límite diario de generación de imágenes": "ChatGPT alcanzó su límite de uso",
+        "daily image-generation limit": "ChatGPT alcanzó su límite de uso",
+        "daily image generation limit": "ChatGPT alcanzó su límite de uso",
         "too many requests": "ChatGPT pidió esperar por exceso de pedidos",
         "something went wrong": "ChatGPT devolvió un error",
         "se produjo un error": "ChatGPT devolvió un error",

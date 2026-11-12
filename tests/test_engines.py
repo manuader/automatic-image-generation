@@ -114,6 +114,25 @@ class GeminiImageLimitTests(unittest.TestCase):
         self.assertIsNone(browser.contains_error("Estás por alcanzar el límite de uso"))
 
 
+class ChatGPTImageLimitTests(unittest.TestCase):
+    def test_el_limite_diario_de_imagenes_es_cuota_en_los_dos_idiomas(self):
+        """Así respondió ChatGPT el 2026-11-11 con la cuota diaria de imágenes agotada."""
+        from supervisor import QUOTA, classify
+
+        browser = engines.load("chat-gpt")
+        textos = (
+            "No pude generar la imagen de El Ojeador porque alcanzaste el límite diario "
+            "de generación de imágenes.\nEl límite se restablecerá en aproximadamente 5 horas",
+            "I couldn't generate the El Masajista avatar because you've reached your daily "
+            "image-generation limit.\nThe limit resets in approximately 5 hours",
+        )
+        for texto in textos:
+            with self.subTest(texto=texto[:40]):
+                motivo = browser.contains_error(texto)
+                self.assertEqual(motivo, "ChatGPT alcanzó su límite de uso")
+                self.assertEqual(classify(motivo), QUOTA)
+
+
 class ChromeLauncherTests(unittest.TestCase):
     def test_the_launcher_uses_the_debug_port_and_a_profile_per_engine(self):
         with tempfile.TemporaryDirectory() as tmp:
