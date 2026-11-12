@@ -1,7 +1,7 @@
 # 215 — Dios del Futbol, skin Retro
 
 - **archivo**: `dios_futbol_idle__retro.png`
-- **estado**: pendiente
+- **estado**: hecho
 - **referencia**: adjuntar `references/protagonista_hoja.png`
 - **familia**: dios_futbol
 - **destino en el juego**: fam_retro.atlas/dios_futbol_idle__retro (@2x 384, @3x 512)
